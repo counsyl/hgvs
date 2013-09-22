@@ -70,10 +70,8 @@ BASES = BASE+
 
 """
 
-
 import re
 
-from .variants import get_sequence
 from .variants import justify_indel
 from .variants import normalize_variant
 from .variants import revcomp
@@ -312,8 +310,6 @@ class CDNACoord(object):
                 self.coord, self.offset, self.landmark)
         else:
             return "CDNACoord(%d, %d)" % (self.coord, self.offset)
-
-
 
 
 def get_exons(transcript):
@@ -712,7 +708,7 @@ class HGVSName(object):
                     self.alt_allele = self.ref_allele * 2
                 return
 
-        raise InvalidHGVSName(detail, 'genomic allele')
+        raise InvalidHGVSName(details, 'genomic allele')
 
     def __repr__(self):
         try:
@@ -928,8 +924,6 @@ class HGVSName(object):
             return alleles
         else:
             return tuple(map(revcomp, alleles))
-
-
 
 
 def is_duplication(chrom, offset, ref, alt, genome):
