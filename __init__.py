@@ -315,14 +315,13 @@ class CDNACoord(object):
 def get_exons(transcript):
     """Yield exons in coding order."""
     transcript_strand = transcript.tx_position.is_forward_strand
-    exons = list(transcript.exons)
-    exons.sort(key=lambda exon: exon.exon_number)
-    #if transcript_strand:
-    #    exons = (transcript.exons.select_related('tx_position')
-    #             .order_by('tx_position__chrom_start'))
-    #else:
-    #    exons = (transcript.exons.select_related('tx_position')
-    #             .order_by('-tx_position__chrom_start'))
+    if getattr(transcript.exons, 'select_related'):
+        exons = list(transcript.exons.select_related('tx_position'))
+    else:
+        exons = list(transcript.exons)
+    exons.sort(key=lambda exon: exon.tx_position.chrom_start)
+    if not transcript_strand:
+        exons.reverse()
     return exons
 
 
