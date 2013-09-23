@@ -315,12 +315,14 @@ class CDNACoord(object):
 def get_exons(transcript):
     """Yield exons in coding order."""
     transcript_strand = transcript.tx_position.is_forward_strand
-    if transcript_strand:
-        exons = (transcript.exons.select_related('tx_position')
-                 .order_by('tx_position__chrom_start'))
-    else:
-        exons = (transcript.exons.select_related('tx_position')
-                 .order_by('-tx_position__chrom_start'))
+    exons = list(transcript.exons)
+    exons.sort(key=lambda exon: exon.exon_number)
+    #if transcript_strand:
+    #    exons = (transcript.exons.select_related('tx_position')
+    #             .order_by('tx_position__chrom_start'))
+    #else:
+    #    exons = (transcript.exons.select_related('tx_position')
+    #             .order_by('-tx_position__chrom_start'))
     return exons
 
 
@@ -395,7 +397,7 @@ def get_cdna_genomic_coordinate(transcript, coord):
             break
         cdna_start = cdna_end + 1
     else:
-        raise ValueError("transcript contains no exons")
+        raise ValueError("coordinate not within an exon")
 
     # Compute genomic coordinate.
     if transcript_strand:
@@ -1038,10 +1040,10 @@ def parse_hgvs(
 
     chrom, start, end, ref, alt = get_vcf_allele(hgvs, genome, transcript)
     if normalize:
-        return normalize_variant(chrom, start, ref, [alt], genome,
-                                 flank_length=flank_length).variant
-    else:
-        return (chrom, start, ref, alt)
+        chrom, start, ref, [alt] = normalize_variant(
+            chrom, start, ref, [alt], genome,
+            flank_length=flank_length).variant
+    return (chrom, start, ref, alt)
 
 
 def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
