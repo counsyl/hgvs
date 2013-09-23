@@ -315,7 +315,7 @@ class CDNACoord(object):
 def get_exons(transcript):
     """Yield exons in coding order."""
     transcript_strand = transcript.tx_position.is_forward_strand
-    if getattr(transcript.exons, 'select_related'):
+    if hasattr(transcript.exons, 'select_related'):
         exons = list(transcript.exons.select_related('tx_position'))
     else:
         exons = list(transcript.exons)
@@ -440,15 +440,18 @@ def matches_ref_allele(hgvs, genome, transcript=None):
 
 
 class InvalidHGVSName(ValueError):
-    def __init__(self, name='', part='name'):
+    def __init__(self, name='', part='name', reason=''):
         if name:
             message = 'Invalid HGVS %s "%s"' % (part, name)
         else:
             message = 'Invalid HGVS %s' % part
+        if reason:
+            message += ': ' + reason
         super(InvalidHGVSName, self).__init__(message)
 
         self.name = name
         self.part = part
+        self.reason = reason
 
 
 class HGVSName(object):
@@ -490,15 +493,12 @@ class HGVSName(object):
 
     def parse(self, name):
         """Parse a HGVS name."""
-        try:
-            # Does HGVS name have transcript/gene prefix?
-            if ':' in name:
-                prefix, allele = name.split(':')
-            else:
-                prefix = ''
-                allele = name
-        except:
-            raise InvalidHGVSName(name)
+        # Does HGVS name have transcript/gene prefix?
+        if ':' in name:
+            prefix, allele = name.split(':', 1)
+        else:
+            prefix = ''
+            allele = name
 
         self.name = name
 
@@ -564,7 +564,8 @@ class HGVSName(object):
           Genomic indel: g.1000100_1000102delATG
         """
         if '.' not in allele:
-            InvalidHGVSName(allele, 'allele')
+            raise InvalidHGVSName(allele, 'allele',
+                                  'expected kind "c.", "p.", "g.", etc')
 
         # Determine HGVS name kind.
         kind, details = allele.split('.', 1)
@@ -578,7 +579,7 @@ class HGVSName(object):
         elif kind == "g":
             self.parse_genome(details)
         else:
-            raise NotImplementedError("not implemented: %s" % allele)
+            raise NotImplementedError("unknown kind: %s" % allele)
 
     def parse_cdna(self, details):
         """
