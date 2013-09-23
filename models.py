@@ -10,6 +10,11 @@ class Position(object):
         self.is_forward_strand = is_forward_strand
 
 
+class Gene(object):
+    def __init__(self, name):
+        self.name = name
+
+
 class Transcript(object):
     """RefGene Transcripts for hg19
 
@@ -19,7 +24,7 @@ class Transcript(object):
                  is_default=False, exons=None):
         self.name = name
         self.version = version
-        self.gene = gene
+        self.gene = Gene(gene)
         self.tx_position = tx_position
         self.cds_position = cds_position
         self.is_default = is_default
