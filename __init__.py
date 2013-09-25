@@ -1,6 +1,10 @@
 """
 Methods for manipulating HGVS names
 
+Recommendations for the HGVS naming standard:
+http://www.hgvs.org/mutnomen/standards.html
+
+
 HGVS language:
 
 HGVS = ALLELE
@@ -87,8 +91,9 @@ class HGVSRegex(object):
     """
 
     # DNA syntax
-    BASE = "[acgtACGT]|\d+"
-    BASES = "[acgtACGT]+|\d+"
+    # http://www.hgvs.org/mutnomen/standards.html#nucleotide
+    BASE = "[acgtbdhkmnrsvwyACGTBDHKMNRSVWY]|\d+"
+    BASE = "[acgtbdhkmnrsvwyACGTBDHKMNRSVWY]+|\d+"
     DNA_REF = "(?P<ref>" + BASES + ")"
     DNA_ALT = "(?P<alt>" + BASES + ")"
 
@@ -312,6 +317,43 @@ class CDNACoord(object):
             return "CDNACoord(%d, %d)" % (self.coord, self.offset)
 
 
+# The RefSeq standard for naming contigs/transcripts/proteins:
+# http://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/?report=objectonly  # nopep8
+REFSEQ_PREFIXES = [
+    ('AC_', 'genomic',
+     'Complete genomic molecule, usually alternate assembly'),
+    ('NC_', 'genomic',
+     'Complete genomic molecule, usually reference assembly'),
+    ('NG_', 'genomic', 'Incomplete genomic region'),
+    ('NT_', 'genomic', 'Contig or scaffold, clone-based or WGS'),
+    ('NW_', 'genomic', 'Contig or scaffold, primarily WGS'),
+    ('NS_', 'genomic', 'Environmental sequence'),
+    ('NZ_', 'genomic', 'Unfinished WGS'),
+    ('NM_', 'mRNA', ''),
+    ('NR_', 'RNA', ''),
+    ('XM_', 'mRNA', 'Predicted model'),
+    ('XR_', 'RNA', 'Predicted model'),
+    ('AP_', 'Protein', 'Annotated on AC_ alternate assembly'),
+    ('NP_', 'Protein', 'Associated with an NM_ or NC_ accession'),
+    ('YP_', 'Protein', ''),
+    ('XP_', 'Protein', 'Predicted model, associated with an XM_ accession'),
+    ('ZP_', 'Protein', 'Predicted model, annotated on NZ_ genomic records'),
+]
+
+REFSEQ_PREFIX_LOOKUP = {
+    prefix: (kind, description)
+    for prefix, kind, description in REFSEQ_PREFIXES
+}
+
+
+def get_refseq_type(name):
+    """
+    Return the RefSeq type for a refseq name.
+    """
+    prefix = name[:3]
+    return REFSEQ_PREFIX_LOOKUP.get(prefix, (None, ''))[0]
+
+
 def get_exons(transcript):
     """Yield exons in coding order."""
     transcript_strand = transcript.tx_position.is_forward_strand
@@ -370,6 +412,12 @@ def get_genomic_sequence(genome, chrom, start, end):
         return str(genome[str(chrom)][start - 1:end]).upper()
 
 
+def is_coding_transcript(transcript):
+    """Return True if transcript contains non-empty conding sequence."""
+    return (transcript.cds_position.chrom_start <
+            transcript.cds_position.chrom_stop)
+
+
 def get_cdna_genomic_coordinate(transcript, coord):
     """Convert a HGVS cDNA coordinate to a genomic coordinate."""
 
@@ -377,7 +425,8 @@ def get_cdna_genomic_coordinate(transcript, coord):
 
     transcript_strand = transcript.tx_position.is_forward_strand
     exons = get_exons(transcript)
-    utr5p = get_utr5p_size(transcript)
+    utr5p = (get_utr5p_size(transcript)
+             if is_coding_transcript(transcript) else 0)
 
     # compute position along spliced transcript
     if coord.coord > 0:
@@ -457,8 +506,6 @@ class InvalidHGVSName(ValueError):
 class HGVSName(object):
     """
     Represents a HGVS variant name.
-
-    http://www.hgvs.org/mutnomen/standards.html
     """
 
     def __init__(self, name='', chrom='', transcript='', gene='', kind='',
@@ -504,14 +551,11 @@ class HGVSName(object):
 
         # Parse prefix and allele.
         self.parse_allele(allele)
-        if self.kind == 'g':
-            self.chrom = prefix
-        else:
-            self.parse_transcript(prefix)
+        self.parse_prefix(prefix, self.kind)
 
-    def parse_transcript(self, prefix):
+    def parse_prefix(self, prefix, kind):
         """
-        Parse a HGVS trancript/gene prefix.
+        Parse a HGVS prefix (gene/transcript/chromosome).
 
         Some examples of full hgvs names with transcript include:
           NM_007294.3:c.2207A>C
@@ -521,11 +565,17 @@ class HGVSName(object):
 
         # No prefix.
         if prefix == '':
+            self.chrom = ''
             self.transcript = ''
             self.gene = ''
             return
 
-        # Transcript and gene given with parens:
+        # Genomic prefix.
+        if kind == 'g':
+            self.chrom = prefix
+            return
+
+        # Transcript and gene given with parens.
         # example: NM_007294.3(BRCA1):c.2207A>C
         match = re.match("^(?P<transcript>[^(]+)\((?P<gene>[^)]+)\)$", prefix)
         if match:
@@ -533,7 +583,7 @@ class HGVSName(object):
             self.gene = match.group('gene')
             return
 
-        # Transcript and gene given with braces:
+        # Transcript and gene given with braces.
         # example: BRCA1{NM_007294.3}:c.2207A>C
         match = re.match("^(?P<gene>[^{]+)\{(?P<transcript>[^}]+)\}$", prefix)
         if match:
@@ -541,12 +591,16 @@ class HGVSName(object):
             self.gene = match.group('gene')
             return
 
-        # Only transcript:
-        match = re.match("^(?P<transcript>.+)$", prefix)
-        if match:
+        # Determine using refseq type.
+        refseq_type = get_refseq_type(prefix)
+        if refseq_type in ('mRNA', 'RNA'):
             self.transcript = match.group('transcript')
             self.gene = ''
-            return
+
+        # Assume gene name.
+        self.transcript = ''
+        self.gene = prefix
+        return
 
         raise InvalidHGVSName(prefix, 'prefix')
 
@@ -589,7 +643,6 @@ class HGVSName(object):
           Substitution: 101A>C,
           Indel: 3428delCinsTA, 1000_1003delATG, 1000_1001insATG
         """
-
         for regex in HGVSRegex.CDNA_ALLELE_REGEXES:
             match = re.match(regex, details)
             if match:
@@ -890,7 +943,7 @@ class HGVSName(object):
 
         else:
             raise NotImplementedError(
-                'Coordinates are available for this kind of HGVS name "%s"'
+                'Coordinates are not available for this kind of HGVS name "%s"'
                 % self.kind)
 
         return chrom, start, end
@@ -906,7 +959,7 @@ class HGVSName(object):
             # Indels have left-padding.
             start -= 1
         else:
-            raise NotImplementedError("unknown mutation_type '%s'" %
+            raise NotImplementedError("Unknown mutation_type '%s'" %
                                       self.mutation_type)
         return chrom, start, end
 
