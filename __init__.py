@@ -93,7 +93,7 @@ class HGVSRegex(object):
     # DNA syntax
     # http://www.hgvs.org/mutnomen/standards.html#nucleotide
     BASE = "[acgtbdhkmnrsvwyACGTBDHKMNRSVWY]|\d+"
-    BASE = "[acgtbdhkmnrsvwyACGTBDHKMNRSVWY]+|\d+"
+    BASES = "[acgtbdhkmnrsvwyACGTBDHKMNRSVWY]+|\d+"
     DNA_REF = "(?P<ref>" + BASES + ")"
     DNA_ALT = "(?P<alt>" + BASES + ")"
 
@@ -594,15 +594,13 @@ class HGVSName(object):
         # Determine using refseq type.
         refseq_type = get_refseq_type(prefix)
         if refseq_type in ('mRNA', 'RNA'):
-            self.transcript = match.group('transcript')
+            self.transcript = prefix
             self.gene = ''
+            return
 
         # Assume gene name.
         self.transcript = ''
         self.gene = prefix
-        return
-
-        raise InvalidHGVSName(prefix, 'prefix')
 
     def parse_allele(self, allele):
         """
