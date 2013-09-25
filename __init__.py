@@ -4,6 +4,9 @@ Methods for manipulating HGVS names
 Recommendations for the HGVS naming standard:
 http://www.hgvs.org/mutnomen/standards.html
 
+Definition of which transcript to use coding variants:
+ftp://ftp.ncbi.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
+
 
 HGVS language:
 
@@ -1084,8 +1087,11 @@ def parse_hgvs(
 
     # Determine transcript.
     if hgvs.kind == 'c' and not transcript:
-        if hgvs.transcript and get_transcript:
-            transcript = get_transcript(hgvs.transcript)
+        if get_transcript:
+            if hgvs.transcript:
+                transcript = get_transcript(hgvs.transcript)
+            elif hgvs.gene:
+                transcript = get_transcript(hgvs.gene)
         if not transcript:
             raise ValueError('transcript is required')
 
