@@ -1,6 +1,8 @@
 
 from collections import namedtuple
 
+from . import get_refseq_type
+
 
 class Position(object):
     def __init__(self, chrom, chrom_start, chrom_stop, is_forward_strand):
@@ -20,6 +22,7 @@ class Transcript(object):
 
     A gene may have multiple transcripts with different combinations of exons.
     """
+
     def __init__(self, name, version, gene, tx_position, cds_position,
                  is_default=False, exons=None):
         self.name = name
@@ -29,6 +32,10 @@ class Transcript(object):
         self.cds_position = cds_position
         self.is_default = is_default
         self.exons = exons if exons else []
+
+    @property
+    def is_coding(self):
+        return get_refseq_type(self.name) == 'mRNA'
 
     @property
     def strand(self):
@@ -42,7 +49,11 @@ class Transcript(object):
     def genomic_offset_to_cds_coord(self, genomic_offset):
         """Convert a genomic coordinate to a cDNA coordinate and offset.
         """
-        exons = [exon for exon in self.coding_exons if exon is not None]
+        if self.is_coding:
+            exons = [exon for exon in self.coding_exons if exon is not None]
+        else:
+            exons = [exon.get_as_interval()
+                     for exon in self.exons]
 
         if len(exons) == 0:
             return None
