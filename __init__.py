@@ -403,6 +403,27 @@ def get_utr5p_size(transcript):
         return cdna_len + (exon_end - start_codon)
 
 
+def find_stop_codon(exons, cds_position):
+    """Return the position along the cDNA of the base after the stop codon."""
+    if cds_position.is_forward_strand:
+        stop_pos = cds_position.chrom_stop
+    else:
+        stop_pos = cds_position.chrom_start
+    cdna_pos = 0
+    for exon in exons:
+        exon_start = exon.tx_position.chrom_start
+        exon_stop = exon.tx_position.chrom_stop
+
+        if exon_start <= stop_pos < exon_stop:
+            if cds_position.is_forward_strand:
+                return cdna_pos + stop_pos - exon_start
+            else:
+                return cnda_pos + exon_stop - 1 - stop_pos
+        else:
+            cdna_pos += exon_stop - exon_start
+    raise ValueError('Stop codon is not in any of the exons')
+
+
 def get_genomic_sequence(genome, chrom, start, end):
     """
     Return a sequence for the genomic region
@@ -423,19 +444,24 @@ def is_coding_transcript(transcript):
 
 def get_cdna_genomic_coordinate(transcript, coord):
     """Convert a HGVS cDNA coordinate to a genomic coordinate."""
-
-    # TODO: still need to implement landmark handling (after stop codon)
-
     transcript_strand = transcript.tx_position.is_forward_strand
     exons = get_exons(transcript)
     utr5p = (get_utr5p_size(transcript)
              if is_coding_transcript(transcript) else 0)
 
-    # compute position along spliced transcript
-    if coord.coord > 0:
-        pos = utr5p + coord.coord
+    # compute starting position along spliced transcript.
+    if coord.landmark == CDNA_START_CODON:
+        if coord.coord > 0:
+            pos = utr5p + coord.coord
+        else:
+            pos = utr5p + coord.coord + 1
+    elif coord.landmark == CDNA_STOP_CODON:
+        if coord.coord < 0:
+            raise ValueError('CDNACoord cannot have a negative coord and '
+                             'landmark CDNA_STOP_CODON')
+        pos = find_stop_codon(exons, transcript.cds_position) + coord.coord
     else:
-        pos = utr5p + coord.coord + 1
+        raise ValueError('unknown CDNACoord landmark "%s"' % coord.landmark)
 
     # Walk along transcript until we find an exon that contains pos.
     cdna_start = 1
@@ -450,7 +476,7 @@ def get_cdna_genomic_coordinate(transcript, coord):
     else:
         raise ValueError("coordinate not within an exon")
 
-    # Compute genomic coordinate.
+    # Compute genomic coordinate using offset.
     if transcript_strand:
         # Plus strand.
         return exon_start + (pos - cdna_start) + coord.offset
