@@ -84,6 +84,7 @@ from .variants import normalize_variant
 from .variants import revcomp
 
 
+CHROM_PREFIX = 'chr'
 CDNA_START_CODON = 'cdna_start'
 CDNA_STOP_CODON = 'cdna_stop'
 
@@ -165,9 +166,10 @@ class HGVSRegex(object):
 
         # Peptide indel
         # Example: Glu1161_Ser1164?fs
-        PEP_REF + COORD_START + "_" + PEP_REF2 + COORD_END + PEP_EXTRA,
-        PEP_REF + COORD_START + "_" + PEP_REF2 + COORD_END + PEP_ALT +
-        PEP_EXTRA,
+        "(?P<delins>" + PEP_REF + COORD_START + "_" + PEP_REF2 + COORD_END +
+        PEP_EXTRA + ")",
+        "(?P<delins>" + PEP_REF + COORD_START + "_" + PEP_REF2 + COORD_END +
+        PEP_ALT + PEP_EXTRA + ")",
     ]
 
     PEP_ALLELE_REGEXES = [re.compile("^" + regex + "$")
@@ -307,7 +309,7 @@ class CDNACoord(object):
     def __eq__(self, other):
         """Equality operator."""
         return ((self.coord, self.offset, self.landmark) ==
-                (other.coord, other.offset, other.lankmark))
+                (other.coord, other.offset, other.landmark))
 
     def __repr__(self):
         """
@@ -559,7 +561,7 @@ class HGVSName(object):
 
         # cDNA-specific fields
         self.cdna_start = cdna_start if cdna_start else CDNACoord()
-        self.cdna_end = cdna_start if cdna_end else CDNACoord()
+        self.cdna_end = cdna_end if cdna_end else CDNACoord()
 
         # Protein-specific fields
         self.pep_extra = pep_extra
@@ -599,11 +601,6 @@ class HGVSName(object):
             self.gene = ''
             return
 
-        # Genomic prefix.
-        if kind == 'g':
-            self.chrom = prefix
-            return
-
         # Transcript and gene given with parens.
         # example: NM_007294.3(BRCA1):c.2207A>C
         match = re.match("^(?P<transcript>[^(]+)\((?P<gene>[^)]+)\)$", prefix)
@@ -624,11 +621,14 @@ class HGVSName(object):
         refseq_type = get_refseq_type(prefix)
         if refseq_type in ('mRNA', 'RNA'):
             self.transcript = prefix
-            self.gene = ''
+            return
+
+        # Determine using refseq type.
+        if prefix.startswith(CHROM_PREFIX) or refseq_type == 'genomic':
+            self.chrom = prefix
             return
 
         # Assume gene name.
-        self.transcript = ''
         self.gene = prefix
 
     def parse_allele(self, allele):
@@ -794,9 +794,9 @@ class HGVSName(object):
 
     def __repr__(self):
         try:
-            return "HGVSName(%s)" % self.format()
+            return "HGVSName('%s')" % self.format()
         except NotImplementedError:
-            return "HGVSName(%s)" % self.name
+            return "HGVSName('%s')" % self.name
 
     def __unicode__(self):
         return self.format()
@@ -806,15 +806,20 @@ class HGVSName(object):
 
         if self.kind == 'c':
             allele = 'c.' + self.format_cdna()
-        elif self.kind == "p":
+        elif self.kind == 'p':
             allele = 'p.' + self.format_protein()
-        elif self.kind == "g":
+        elif self.kind == 'g':
             allele = 'g.' + self.format_genome()
         else:
             raise NotImplementedError("not implemented: '%s'" % self.kind)
 
-        return self.format_transcript(
-            use_gene=use_gene, use_counsyl=use_counsyl) + allele
+        prefix = self.format_transcript(
+            use_gene=use_gene, use_counsyl=use_counsyl)
+
+        if prefix:
+            return prefix + ':' + allele
+        else:
+            return allele
 
     def format_transcript(self, use_gene=True, use_counsyl=True):
         """
@@ -825,16 +830,24 @@ class HGVSName(object):
           NM_007294.3(BRCA1):c.2207A>C
           BRCA1{NM_007294.3}:c.2207A>C
         """
-        if not self.transcript:
-            return ''
 
-        elif use_gene and self.gene:
-            if use_counsyl:
-                return '%s{%s}' % (self.gene, self.transcript)
+        if self.kind == 'g':
+            if self.chrom:
+                return self.chrom
+
+        if self.transcript:
+            if use_gene and self.gene:
+                if use_counsyl:
+                    return '%s{%s}' % (self.gene, self.transcript)
+                else:
+                    return '%s(%s)' % (self.transcript, self.gene)
             else:
-                return '%s(%s)' % (self.transcript, self.gene)
+                return self.transcript
         else:
-            return self.transcript
+            if use_gene:
+                return self.gene
+            else:
+                return ''
 
     def format_cdna_coords(self):
         """
@@ -898,8 +911,8 @@ class HGVSName(object):
                 self.alt_allele):
             # Match.
             # Example: Glu1161=
-            return (self.ref_allele + str(self.start) + '=' +
-                    self.pep_extra)
+            pep_extra = self.pep_extra if self.pep_extra else '='
+            return self.ref_allele + str(self.start) + pep_extra
 
         elif (self.start == self.end and
                 self.ref_allele == self.ref2_allele and
@@ -907,13 +920,13 @@ class HGVSName(object):
             # Change.
             # Example: Glu1161Ser
             return (self.ref_allele + str(self.start) +
-                    self.pep_start_alt_allele + self.pep_extra)
+                    self.alt_allele + self.pep_extra)
 
         elif self.start != self.end:
             # Range change.
             # Example: Glu1161_Ser1164?fs
             return (self.ref_allele + str(self.start) + '_' +
-                    self.pep_start_alt_allele + str(self.end) +
+                    self.ref2_allele + str(self.end) +
                     self.pep_extra)
 
         else:
@@ -951,6 +964,10 @@ class HGVSName(object):
                     raise AssertionError(
                         "cdna_start cannot be greater than cdna_end")
                 start, end = end, start
+            else:
+                if start > end:
+                    raise AssertionError(
+                        "cdna_start cannot be greater than cdna_end")
 
             if self.mutation_type == "ins":
                 # Inserts have empty interval.
