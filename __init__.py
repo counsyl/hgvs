@@ -420,7 +420,7 @@ def find_stop_codon(exons, cds_position):
             if cds_position.is_forward_strand:
                 return cdna_pos + stop_pos - exon_start
             else:
-                return cnda_pos + exon_stop - 1 - stop_pos
+                return cdna_pos + exon_stop - 1 - stop_pos
         else:
             cdna_pos += exon_stop - exon_start
     raise ValueError('Stop codon is not in any of the exons')

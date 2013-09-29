@@ -1,9 +1,7 @@
 
-from collections import defaultdict
 from unittest import TestCase
 
 from ..variants import normalize_variant
-from ..variants import revcomp
 from .genome import MockGenome
 
 

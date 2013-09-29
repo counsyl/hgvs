@@ -1,9 +1,13 @@
+
+from ..variants import revcomp
+
 try:
     from pygr.seqdb import SequenceFileDB
 except:
     pass
 
 
+# Default genome file used for deriving mock sequences.
 _genome_file = '/seq-data/seq/misc/genomics/genomes/hg19/hg19.fa'
 
 
