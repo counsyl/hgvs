@@ -292,8 +292,6 @@ class CDNACoord(object):
         """
         if self.landmark == CDNA_STOP_CODON:
             coord_prefix = '*'
-        elif self.coord < 0:
-            coord_prefix = '-'
         else:
             coord_prefix = ''
 

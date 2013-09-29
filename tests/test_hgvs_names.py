@@ -28,6 +28,14 @@ def test_parse_cdna_coord():
         nose.tools.assert_equal(CDNACoord(string=text), expected)
 
 
+def test_fromat_cdna_coord():
+    """
+    Parse cDNA coordinates.
+    """
+    for expected_text, coord in _parse_cdna_coords:
+        nose.tools.assert_equal(str(coord), expected_text)
+
+
 def test_parse_name():
     """
     Parsing HGVS names.
