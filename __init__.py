@@ -1086,8 +1086,8 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
         return offset, ref, alt
 
     # Get genomic sequence around the lesion.
-    start = max(offset - 1000, 0)
-    end = offset + 1000
+    start = max(offset - 100, 0)
+    end = offset + 100
     seq = unicode(genome[str(chrom)][start-1:end]).upper()
     cds_offset = offset - start
 
@@ -1114,10 +1114,9 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     return offset, ref, alt
 
 
-def parse_hgvs(
-        hgvs_name, genome, transcript=None,
-        get_transcript=lambda name: None,
-        flank_length=30, normalize=True):
+def parse_hgvs_name(hgvs_name, genome, transcript=None,
+                    get_transcript=lambda name: None,
+                    flank_length=30, normalize=True):
     """
     Parse an HGVS name into (chrom, start, end, ref, alt)
 
@@ -1147,7 +1146,7 @@ def parse_hgvs(
 
 
 def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
-                     use_gene=True, max_allele_length=4):
+                     use_prefix=True, use_gene=True, max_allele_length=4):
     """
     Generate a HGVS name from a genomic coordinate.
 
@@ -1161,9 +1160,12 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     max_allele_length: If allele is greater than this use allele length.
     """
 
-    def format_hgvs_name_prefix(transcript):
-        return "%s{%s.%d}" % (
-            transcript.gene.name, transcript.name, transcript.version)
+    def format_hgvs_name_prefix(transcript, use_gene=True):
+        if use_gene:
+            return '%s{%s.%d}' % (
+                transcript.gene.name, transcript.name, transcript.version)
+        else:
+            return '%s.%d' % (transcript.name, transcript.version)
 
     def format_coords(coords):
         if len(coords) == 1:
@@ -1256,8 +1258,9 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
             return 'c.' + format_coords(coords) + delta_seq
 
         else:
-            return 'g.' + offset + format_allele(
+            mutation_type, offset, delta_seq, delta_len = format_allele(
                 chrom, offset, ref, alt, '+', genome)
+            return 'g.' + str(offset) + delta_seq
 
     def format_hgvs_name_indel(chrom, offset, ref, alt, genome, transcript):
         # remove 1bp padding
@@ -1296,7 +1299,7 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
             chrom, offset, ref, alt, genome, transcript)
 
     # Add gene and transcript prefix:
-    if use_gene:
-        prefix_name = format_hgvs_name_prefix(transcript)
+    if use_prefix:
+        prefix_name = format_hgvs_name_prefix(transcript, use_gene=use_gene)
         name = prefix_name + ':' + name
     return name

@@ -6,7 +6,8 @@ import nose
 from ..import CDNACoord
 from ..import CDNA_STOP_CODON
 from ..import HGVSName
-from ..import parse_hgvs
+from ..import format_hgvs_name
+from ..import parse_hgvs_name
 from ..utils import read_refgene
 from ..utils import make_transcript
 from .genome import MockGenome
@@ -29,7 +30,7 @@ def test_parse_cdna_coord():
 
 def test_parse_name():
     """
-    Test parsing of HGVS names.
+    Parsing HGVS names.
     """
     for name, formatable, expected in _parse_names:
         hgvs_parsed = HGVSName(name)
@@ -41,7 +42,7 @@ def test_parse_name():
 
 def test_format_name():
     """
-    Test parsing of HGVS names.
+    Format HGVS names.
     """
     for expected_name, formatable, attrs in _parse_names:
         if formatable:
@@ -52,16 +53,36 @@ def test_format_name():
 
 def test_name2variant():
     """
-    Test HGVS names against example names and coordinates.
+    Convert HGVS names to variant coordinates.
     """
     genome = MockGenome(_genome_seq)
 
     for hgvs_name, variant, canonical in _name_variants:
-        hgvs_variant = parse_hgvs(hgvs_name, genome,
-                                  get_transcript=get_transcript)
+        hgvs_variant = parse_hgvs_name(hgvs_name, genome,
+                                       get_transcript=get_transcript)
         nose.tools.assert_equal(
             hgvs_variant, variant,
             repr([hgvs_name, variant, hgvs_variant]))
+
+
+def test_variant2name():
+    """
+    Convert variant coordinates to HGVS names.
+    """
+    genome = MockGenome(_genome_seq)
+
+    for expected_hgvs_name, variant, canonical in _name_variants:
+        if canonical:
+            transcript_name = HGVSName(expected_hgvs_name).transcript
+            transcript = get_transcript(transcript_name)
+            assert transcript, transcript_name
+            chrom, offset, ref, alt = variant
+            hgvs_name = format_hgvs_name(
+                chrom, offset, ref, alt, genome, transcript,
+                use_gene=False)
+            nose.tools.assert_equal(
+                hgvs_name, expected_hgvs_name,
+                repr([hgvs_name, expected_hgvs_name, variant]))
 
 
 # Test examples of cDNA coordinates.
@@ -442,86 +463,86 @@ _parse_names = [
 # format: (name, variant, is_canonical)
 _name_variants = [
     # Simple SNPs.
-    ('NM_000352:c.215A>G', ('chr11', 17496508, 'T', 'C'), True),
-    ('NM_000352:c.72C>A', ('chr11', 17498252, 'G', 'T'),  True),
-    ('NM_000352:c.3885C>G', ('chr11', 17418843, 'G', 'C'), True),
+    ('NM_000352.3:c.215A>G', ('chr11', 17496508, 'T', 'C'), True),
+    ('NM_000352.3:c.72C>A', ('chr11', 17498252, 'G', 'T'),  True),
+    ('NM_000352.3:c.3885C>G', ('chr11', 17418843, 'G', 'C'), True),
 
     # SNPs within introns.
-    ('NM_000352:c.1630+1G>A', ('chr11', 17464266, 'C', 'T'), True),
-    ('NM_000352:c.1630+1G>C', ('chr11', 17464266, 'C', 'G'), True),
-    ('NM_000352:c.1630+1G>T', ('chr11', 17464266, 'C', 'A'), True),
-    ('NM_000352:c.1672-20A>G', ('chr11', 17452526, 'T', 'C'), True),
-    ('NM_000352:c.1672-74G>A', ('chr11', 17452580, 'C', 'T'), True),
-    ('NM_000352:c.1923+5G>T', ('chr11', 17450107, 'C', 'A'), True),
-    ('NM_000352:c.2041-21G>A', ('chr11', 17449510, 'C', 'T'), True),
-    ('NM_000352:c.2116+3A>G', ('chr11', 17449411, 'T', 'C'), True),
-    ('NM_000352:c.2116+1G>T', ('chr11', 17449413, 'C', 'A'), True),
-    ('NM_000352:c.2116+2T>C', ('chr11', 17449412, 'A', 'G'), True),
+    ('NM_000352.3:c.1630+1G>A', ('chr11', 17464266, 'C', 'T'), True),
+    ('NM_000352.3:c.1630+1G>C', ('chr11', 17464266, 'C', 'G'), True),
+    ('NM_000352.3:c.1630+1G>T', ('chr11', 17464266, 'C', 'A'), True),
+    ('NM_000352.3:c.1672-20A>G', ('chr11', 17452526, 'T', 'C'), True),
+    ('NM_000352.3:c.1672-74G>A', ('chr11', 17452580, 'C', 'T'), True),
+    ('NM_000352.3:c.1923+5G>T', ('chr11', 17450107, 'C', 'A'), True),
+    ('NM_000352.3:c.2041-21G>A', ('chr11', 17449510, 'C', 'T'), True),
+    ('NM_000352.3:c.2116+3A>G', ('chr11', 17449411, 'T', 'C'), True),
+    ('NM_000352.3:c.2116+1G>T', ('chr11', 17449413, 'C', 'A'), True),
+    ('NM_000352.3:c.2116+2T>C', ('chr11', 17449412, 'A', 'G'), True),
 
     # Indels.
-    ('NM_000018:c.922_930delGCAGAGGTGinsTCAAAGCAC',
+    ('NM_000018.3:c.922_930delGCAGAGGTGinsTCAAAGCAC',
      ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False),
-    ('NM_000018:c.1077_1077+1delGGinsCAC',
+    ('NM_000018.3:c.1077_1077+1delGGinsCAC',
      ('chr17', 7126183, 'CGG', 'CCAC'), True),
-    ('NM_000019:c.163_167delTTTTTinsAA',
+    ('NM_000019.3:c.163_167delTTTTTinsAA',
      ('chr11', 108004588, 'TTTTTT', 'TAA'), False),
-    ('NM_000022:c.781-3_781delCAGAinsTGGAAGAGCAGATCTGG',
+    ('NM_000022.2:c.781-3_781delCAGAinsTGGAAGAGCAGATCTGG',
      ('chr20', 43251292, 'ATCTG', 'ACCAGATCTGCTCTTCCA'), False),
-    ('NM_000023:c.585-2_585-1delAGinsT',
+    ('NM_000023.2:c.585-2_585-1delAGinsT',
      ('chr17', 48246450, 'CAG', 'CT'), True),
-    ('NM_000030:c.2_3delTGinsAT',
+    ('NM_000030.2:c.2_3delTGinsAT',
      ('chr2', 241808283, 'ATG', 'AAT'), True),
-    ('NM_000030:c.2_3del2ins2',
-     ('chr2', 241808283, 'ATG', 'ANN'), True),
-    ('NM_007294:c.4185+2_4185+22del21insA',
+    ('NM_000030.2:c.2_3del2ins2',
+     ('chr2', 241808283, 'ATG', 'ANN'), False),
+    ('NM_007294.3:c.4185+2_4185+22del21insA',
      ('chr17', 41242938, 'GCACACACACACACGCTTTTTA', 'GT'), False),
 
     # Single letter del and insert.
-    ('NM_000016:c.945+4delAinsGC',
+    ('NM_000016.4:c.945+4delAinsGC',
      ('chr1', 76216234, u'AA', 'AGC'), True),
-    ('NM_000030:c.308delGinsTCCTGGTTGA',
+    ('NM_000030.2:c.308delGinsTCCTGGTTGA',
      ('chr2', 241808728, u'GG', 'GTCCTGGTTGA'), False),
-    ('NM_000038:c.1617delCinsGAA',
+    ('NM_000038.5:c.1617delCinsGAA',
      ('chr5', 112163693, u'AC', 'AGAA'), True),
-    ('NM_000038:c.4256delGinsCC',
+    ('NM_000038.5:c.4256delGinsCC',
      ('chr5', 112175546, u'AG', 'ACC'), True),
-    ('NM_000038:c.4256delGins5',
-     ('chr5', 112175546, u'AG', 'ANNNNN'), True),
+    ('NM_000038.5:c.4256delGins5',
+     ('chr5', 112175546, u'AG', 'ANNNNN'), False),
 
     # Delete region.
-    ('NM_000016:c.291_296delTCTTGG',
+    ('NM_000016.4:c.291_296delTCTTGG',
      ('chr1', 76199214, u'AGGTCTT', 'A'),  False),
-    ('NM_000016:c.306_307insG',
+    ('NM_000016.4:c.306_307insG',
      ('chr1', 76199232, u'T', 'TG'), False),
-    ('NM_000016:c.343_348delGGATGT',
+    ('NM_000016.4:c.343_348delGGATGT',
      ('chr1', 76199267, u'ATGGATG', 'A'), False),
-    ('NM_000016:c.430_432delAAG', ('chr1', 76200511, u'AAAG', 'A'), True),
-    ('NM_000016:c.430_432del3', ('chr1', 76200511, u'AAAG', 'A'), False),
+    ('NM_000016.4:c.430_432delAAG', ('chr1', 76200511, u'AAAG', 'A'), True),
+    ('NM_000016.4:c.430_432del3', ('chr1', 76200511, u'AAAG', 'A'), False),
 
     # Single letter insert, delete, duplication.
-    ('NM_000016:c.203delA', ('chr1', 76198412, 'GA', 'G'), True),
-    ('NM_000016:c.244dupT', ('chr1', 76198564, 'C', 'CT'), True),
-    ('NM_000016:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True),
-    ('NM_000016:c.475delT', ('chr1', 76205669, 'AT', 'A'), True),
-    ('NM_000016:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True),
-    ('NM_000016:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True),
-    ('NM_000016:c.307insG', ('chr1', 76199232, 'T', 'TG'), True),
+    ('NM_000016.4:c.203delA', ('chr1', 76198412, 'GA', 'G'), True),
+    ('NM_000016.4:c.244dupT', ('chr1', 76198564, 'C', 'CT'), True),
+    ('NM_000016.4:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True),
+    ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True),
+    ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True),
+    ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True),
+    ('NM_000016.4:c.307insG', ('chr1', 76199232, 'T', 'TG'), True),
 
     # Alignment tests for HGVS 3' and VCF left-alignment.
-    ('NM_000492:c.935_937delTCT', ('chr7', 117180210, 'CCTT', 'C'), True),
-    ('NM_000492:c.442delA', ('chr7', 117171120, 'CA', 'C'), True),
-    ('NM_000492:c.805_806delAT', ('chr7', 117176660, 'AAT', 'A'), True),
-    ('NM_000492:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'), True),
-    ('NM_000492:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True),
+    ('NM_000492.3:c.935_937delTCT', ('chr7', 117180210, 'CCTT', 'C'), True),
+    ('NM_000492.3:c.442delA', ('chr7', 117171120, 'CA', 'C'), True),
+    ('NM_000492.3:c.805_806delAT', ('chr7', 117176660, 'AAT', 'A'), True),
+    ('NM_000492.3:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'), True),
+    ('NM_000492.3:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True),
 
     # Transcript prefix.
-    ('NM_007294:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('NM_007294:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('NM_007294(BRCA1):c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('BRCA1{NM_007294}:c.2207A>C', ('chr17', 41245341, 'T', 'G'), True),
+    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
+    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
+    ('NM_007294.3(BRCA1):c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
+    ('BRCA1{NM_007294.3}:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
 
     # After stop codon.
-    ('NM_000492:c.*3A>C', ('chr7', 117307165, 'A', 'C'), False),
+    ('NM_000492.3:c.*3A>C', ('chr7', 117307165, 'A', 'C'), False),
 
     # Genomic simple SNPs.
     ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False),
@@ -555,10 +576,11 @@ _refgene = '''\
 
 
 # Mock transcripts.
-_transcripts = dict(
-    (trans.name, trans)
-    for trans in map(make_transcript,
-                     read_refgene(StringIO(_refgene))))
+_transcripts = {}
+for trans in map(make_transcript,
+                 read_refgene(StringIO(_refgene))):
+    _transcripts[trans.name] = trans
+    _transcripts[trans.name + '.' + str(trans.version)] = trans
 
 
 # Mock genome sequence.
@@ -667,4 +689,27 @@ _genome_seq = dict([
     (('chr1', 76216203, 76216233), 'GAAAACTTTCGGAAAGCTACTTGTAGAGGT'),
     (('chr1', 76199213, 76199220), 'AGGTCTT'),
     (('chr1', 76199183, 76199213), 'CAATGTGTTGAAACATTTTGATACTGTAGG'),
+    (('chr1', 76200411, 76200612), 'CATCTCTGAATTTACATATCCAATAAAAATGACTTGATTTTTTAATGTCAATTTTCTTCGGTAGCAAATGCCTATTATTATTGCTGGAAATGATCAACAAAAGAAGAAGTATTTGGGGAGAATGACTGAGGAGCCATTGATGTGTGTGAGTATGTGTAACTGCCGCTTTATTTCACACTTAAGAAGGGAACAAAGGTGCTA'),  # nopep8
+    (('chr1', 76198312, 76198513), 'AATAATTTTCCCTTAGAGTTCACCGAACAGCAGAAAGAATTTCAAGCTACTGCTCGTAAATTTGCCAGAGAGGAAATCATCCCAGTGGCTGCAGAATATGATAAAACTGGTGAAGTAGGTATATACATTTTAAAGAGGGAAAAATCTTTTACATTTTTTACAAGATTATGTAATCAAACTATCTGGATTTCAAAATATATT'),  # nopep8
+    (('chr1', 76198464, 76198665), 'ATTTTTTACAAGATTATGTAATCAAACTATCTGGATTTCAAAATATATTTTAACTCAGTTCTTTTTCTTCTAGTATCCAGTCCCCCTAATTAGAAGAGCCTGGGAACTTGGTTTAATGAACACACACATTCCAGAGAACTGTGGTAAGCTTTCTTTATATTTTTAATACTGGAATGCATATGAGTAAGAAAAATTGTGGAA'),  # nopep8
+    (('chr1', 76198564, 76198565), 'T'),
+    (('chr1', 76198565, 76198566), 'G'),
+    (('chr1', 76199209, 76199410), 'TAGGAGGTCTTGGACTTGGAACTTTTGATGCTTGTTTAATTAGTGAAGAATTGGCTTATGGATGTACAGGGGTTCAGACTGCTATTGAAGGAAATTCTTTGGGGGTAAGTGACTTAGAAAATTAACTACCTAACTCAGCTCTTGTTAATGAGATAGTTACTCCTGAAGAAGTTGGATTTTTAGAAGAAAAAAAAAGGAAAG'),  # nopep8
+    (('chr1', 76205569, 76205770), 'aataCAGCTTAAAAAATAAAACAATCCTGTTTCCAAACAGTCAAAATTTAATCACTAACATTTAATTTCATTTCTCTTGTTTTTATATATTCAAGGCTTATTGTGTAACAGAACCTGGAGCAGGCTCTGATGTAGCTGGTATAAAGACCAAAGCAGAAAAGAAAGGAGATGAGTATATTATTAATGGTCAGAAGATGTGGA'),  # nopep8
+    (('chr1', 76226949, 76227150), 'TATTGCAAATCAGTTAGCTACTGATGCTGTGCAGATACTTGGAGGCAATGGATTTAATACAGAATATCCTGTAGAAAAACTAATGAGGGATGCCAAAATCTATCAGGTAAGGTTAAAGATGATTTTTTTGGTTTGCAAGGAGAGAGAATATTCATAAATGACAACGTGGATTTCTGATTATTTAGAAATTTTATGTCCCTA'),  # nopep8
+    (('chr1', 76227049, 76227050), 'T'),
+    (('chr1', 76227050, 76227051), 'A'),
+    (('chr1', 76226951, 76227152), 'TTGCAAATCAGTTAGCTACTGATGCTGTGCAGATACTTGGAGGCAATGGATTTAATACAGAATATCCTGTAGAAAAACTAATGAGGGATGCCAAAATCTATCAGGTAAGGTTAAAGATGATTTTTTTGGTTTGCAAGGAGAGAGAATATTCATAAATGACAACGTGGATTTCTGATTATTTAGAAATTTTATGTCCCTAGT'),  # nopep8
+    (('chr1', 76199132, 76199333), 'AAGCAATTAAAATAGTTTACCTTTATTTCTATTGTGATGTACTACATATTACAATGTGTTGAAACATTTTGATACTGTAGGAGGTCTTGGACTTGGAACTTTTGATGCTTGTTTAATTAGTGAAGAATTGGCTTATGGATGTACAGGGGTTCAGACTGCTATTGAAGGAAATTCTTTGGGGGTAAGTGACTTAGAAAATTA'),  # nopep8
+    (('chr1', 76199231, 76199232), 'T'),
+    (('chr1', 76199232, 76199233), 'T'),
+    (('chr7', 117180110, 117180311), 'AATAAAATAACATCCTGAATTTTATTGTTATTGTTTTTTATAGAACAGAACTGAAACTGACTCGGAAGGCAGCCTATGTGAGATACTTCAATAGCTCAGCCTTCTTCTTCTCAGGGTTCTTTGTGGTGTTTTTATCTGTGCTTCCCTATGCACTAATCAAAGGAATCATCCTCCGGAAAATATTCACCACCATCTCATTCT'),  # nopep8
+    (('chr7', 117171020, 117171221), 'GGAGGAACGCTCTATCGCGATTTATCTAGGCATAGGCTTATGCCTTCTCTTTATTGTGAGGACACTGCTCCTACACCCAGCCATTTTTGGCCTTCATCACATTGGAATGCAGATGAGAATAGCTATGTTTAGTTTGATTTATAAGAAGGTAATACTTCCTTGCACAGGCCCCATGGCACATATATTCTGTATCGTACATGT'),  # nopep8
+    (('chr7', 117176560, 117176761), 'TACTATTAgattgattgattgattgattgattgattTACAGAGATCAGAGAGCTGGGAAGATCAGTGAAAGACTTGTGATTACCTCAGAAATGATTGAAAATATCCAATCTGTTAAGGCATACTGCTGGGAAGAAGCAATGGAAAAAATGATTGAAAACTTAAGACAGTAAGTTGTTCCAATAATTTCAATATTGTTAGTA'),  # nopep8
+    (('chr7', 117182004, 117182205), 'AGATGTAATAATGCATTAATGCTATTCTGATTCTATAATATGTTTTTGCTCTCTTTTATAAATAGGATTTCTTACAAAAGCAAGAATATAAGACATTGGAATATAACTTAACGACTACAGAAGTAGTGATGGAGAATGTAACAGCCTTCTGGGAGGAGGTCAGAATTTTTAAAAAATTGTTTGCTCTAAACACCTAACTGT'),  # nopep8
+    (('chr7', 117182107, 117182109), 'TA'),
+    (('chr7', 117182109, 117182111), 'AC'),
+    (('chr7', 117292805, 117293006), 'CTACTTGAAATATTTTACAATACAATAAGGGAAAAATAAAAAGTTATTTAAGTTATTCATACTTTCTTCTTCTTTTCTTTTTTGCTATAGAAAGTATTTATTTTTTCTGGAACATTTAGAAAAAACTTGGATCCCTATGAACAGTGGAGTGATCAAGAAATATGGAAAGTTGCAGATGAGGTAAGGCTGCTAACTGAAATG'),  # nopep8
+    (('chr7', 117292910, 117292911), 'T'),
+    (('chr7', 117292911, 117292912), 'C'),
 ])
