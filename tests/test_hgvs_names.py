@@ -522,6 +522,20 @@ _name_variants = [
 
     # After stop codon.
     ('NM_000492:c.*3A>C', ('chr7', 117307165, 'A', 'C'), False),
+
+    # Genomic simple SNPs.
+    ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False),
+
+    # Genomic indels.
+    ('chr17:g.7126029_7126037delGCAGAGGTGinsTCAAAGCAC',
+     ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False),
+
+    # Genomic single letter del and insert.
+    ('chr1:g.76216235delAinsGC', ('chr1', 76216234, u'AA', 'AGC'), False),
+
+    # Genomic delete region.
+    ('chr1:g.76199215_76199220delGGTCTT',
+     ('chr1', 76199214, u'AGGTCTT', 'A'), False),
 ]
 
 
@@ -645,4 +659,12 @@ _genome_seq = dict([
     (('chr17', 41245310, 41245340), 'TCTTCAGCATTATTAGACACTTTAACTGTT'),
     (('chr7', 117307164, 117307165), 'A'),
     (('chr7', 117307134, 117307164), 'AGAAGAGGTGCAAGATACAAGGCTTTAGAG'),
+    (('chr11', 17496507, 17496508), 'T'),
+    (('chr11', 17496477, 17496507), 'AGCAGCATGAAGGTCAGGATCCACCGCAGG'),
+    (('chr17', 7126027, 7126037), 'AGCAGAGGTG'),
+    (('chr17', 7125997, 7126027), 'GAAGAAGATGGGCATCAAGGCTTCAAACAC'),
+    (('chr1', 76216233, 76216235), 'AA'),
+    (('chr1', 76216203, 76216233), 'GAAAACTTTCGGAAAGCTACTTGTAGAGGT'),
+    (('chr1', 76199213, 76199220), 'AGGTCTT'),
+    (('chr1', 76199183, 76199213), 'CAATGTGTTGAAACATTTTGATACTGTAGG'),
 ])
