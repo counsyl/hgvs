@@ -428,7 +428,7 @@ def find_stop_codon(exons, cds_position):
 
 def get_genomic_sequence(genome, chrom, start, end):
     """
-    Return a sequence for the genomic region
+    Return a sequence for the genomic region.
 
     start, end: 0-based, end-exclusive coordinates of the sequence.
     """
@@ -438,18 +438,12 @@ def get_genomic_sequence(genome, chrom, start, end):
         return str(genome[str(chrom)][start - 1:end]).upper()
 
 
-def is_coding_transcript(transcript):
-    """Return True if transcript contains non-empty conding sequence."""
-    return (transcript.cds_position.chrom_start <
-            transcript.cds_position.chrom_stop)
-
-
-def get_cdna_genomic_coordinate(transcript, coord):
+def cdna_to_genomic_coord(transcript, coord):
     """Convert a HGVS cDNA coordinate to a genomic coordinate."""
     transcript_strand = transcript.tx_position.is_forward_strand
     exons = get_exons(transcript)
     utr5p = (get_utr5p_size(transcript)
-             if is_coding_transcript(transcript) else 0)
+             if transcript.is_coding else 0)
 
     # compute starting position along spliced transcript.
     if coord.landmark == CDNA_START_CODON:
@@ -485,6 +479,71 @@ def get_cdna_genomic_coordinate(transcript, coord):
     else:
         # Minus strand.
         return exon_end - (pos - cdna_start) - coord.offset
+
+
+# Backwards compatibility.
+get_cdna_genomic_coordinate = cdna_to_genomic_coord
+
+
+def genomic_to_cdna_coord(transcript, genomic_offset):
+    """Convert a genomic coordinate to a cDNA coordinate and offset.
+    """
+    if transcript.is_coding:
+        exons = [exon for exon in transcript.coding_exons if exon is not None]
+    else:
+        exons = [exon.get_as_interval()
+                 for exon in get_exons(transcript)]
+
+    if len(exons) == 0:
+        return None
+
+    strand = transcript.strand
+
+    if strand == "+":
+        exons.sort(key=lambda exon: exon.chrom_start)
+    else:
+        exons.sort(key=lambda exon: -exon.chrom_end)
+
+    distances = [exon.distance(genomic_offset)
+                 for exon in exons]
+    min_distance_to_exon = min(map(abs, distances))
+
+    coding_offset = 0
+    for exon in exons:
+        exon_length = exon.chrom_end - exon.chrom_start
+        distance = exon.distance(genomic_offset)
+        if abs(distance) == min_distance_to_exon:
+            if strand == "+":
+                exon_start_cds_offset = coding_offset + 1
+                exon_end_cds_offset = coding_offset + exon_length
+            else:
+                exon_start_cds_offset = coding_offset + exon_length
+                exon_end_cds_offset = coding_offset + 1
+            # this is the exon we want to annotate against
+            if distance == 0:
+                # inside the exon
+                if strand == "+":
+                    coord = (exon_start_cds_offset +
+                             (genomic_offset -
+                              (exon.chrom_start + 1)))
+                else:
+                    coord = (exon_end_cds_offset +
+                             (exon.chrom_end -
+                              genomic_offset))
+                cds_coord = (coord, 0)
+            else:
+                # outside the exon
+                if distance > 0:
+                    nearest_coding = exon_start_cds_offset
+                else:
+                    nearest_coding = exon_end_cds_offset
+                if strand == "+":
+                    distance *= -1
+                cds_coord = (nearest_coding, distance)
+            break
+        coding_offset += exon_length
+
+    return CDNACoord(*cds_coord)
 
 
 def get_allele(hgvs, genome, transcript=None):
@@ -801,7 +860,7 @@ class HGVSName(object):
     def __unicode__(self):
         return self.format()
 
-    def format(self, use_gene=True, use_counsyl=True):
+    def format(self, use_prefix=True, use_gene=True, use_counsyl=True):
         """Generate a HGVS name as a string."""
 
         if self.kind == 'c':
@@ -813,15 +872,15 @@ class HGVSName(object):
         else:
             raise NotImplementedError("not implemented: '%s'" % self.kind)
 
-        prefix = self.format_transcript(
-            use_gene=use_gene, use_counsyl=use_counsyl)
+        prefix = self.format_prefix(
+            use_gene=use_gene, use_counsyl=use_counsyl) if use_prefix else ''
 
         if prefix:
             return prefix + ':' + allele
         else:
             return allele
 
-    def format_transcript(self, use_gene=True, use_counsyl=True):
+    def format_prefix(self, use_gene=True, use_counsyl=True):
         """
         Generate HGVS trancript/gene prefix.
 
@@ -956,8 +1015,8 @@ class HGVSName(object):
         """Return genomic coordinates of reference allele."""
         if self.kind == 'c':
             chrom = transcript.tx_position.chrom
-            start = get_cdna_genomic_coordinate(transcript, self.cdna_start)
-            end = get_cdna_genomic_coordinate(transcript, self.cdna_end)
+            start = cdna_to_genomic_coord(transcript, self.cdna_start)
+            end = cdna_to_genomic_coord(transcript, self.cdna_end)
 
             if not transcript.tx_position.is_forward_strand:
                 if end > start:
@@ -1025,9 +1084,9 @@ class HGVSName(object):
             return tuple(map(revcomp, alleles))
 
 
-def is_duplication(chrom, offset, ref, alt, genome):
+def hgvs_justify_dup(chrom, offset, ref, alt, genome):
     """
-    Determines if allele is a duplication.
+    Determines if allele is a duplication and justifies.
 
     chrom: Chromosome name.
     offset: 1-index genomic coordinate.
@@ -1041,15 +1100,15 @@ def is_duplication(chrom, offset, ref, alt, genome):
 
     if len(ref) == len(alt) == 0:
         # it's a SNP, just return.
-        return None
+        return chrom, offset, ref, alt, '>'
 
     if len(ref) > 0 and len(alt) > 0:
         # complex indel, don't know how to dup check
-        return None
+        return chrom, offset, ref, alt, 'delins'
 
     if len(ref) > len(alt):
         # deletion -- don't dup check
-        return None
+        return chrom, offset, ref, alt, 'del'
 
     indel_seq = alt
     indel_length = len(indel_seq)
@@ -1063,27 +1122,37 @@ def is_duplication(chrom, offset, ref, alt, genome):
     next_seq = unicode(
         genome[str(chrom)][offset:offset + indel_length]).upper()
 
+    # Convert offset back to 1-index.
+    offset += 1
+
     if prev_seq == indel_seq:
-        return (offset - indel_length + 1, offset)
-    if next_seq == indel_seq:
-        return (offset + 1, offset + indel_length)
+        offset = offset - indel_length
+        mutation_type = 'dup'
+        ref = indel_seq
+        alt = indel_seq * 2
+    elif next_seq == indel_seq:
+        mutation_type = 'dup'
+        ref = indel_seq
+        alt = indel_seq * 2
     else:
-        return None
+        mutation_type = 'ins'
+
+    return chrom, offset, ref, alt, mutation_type
 
 
 def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     """
     3' justify an indel according to the HGVS standard.
 
-    Returns (offset, ref, alt).
+    Returns (chrom, offset, ref, alt).
     """
     if len(ref) == len(alt) == 0:
         # It's a SNP, just return.
-        return offset, ref, alt
+        return chrom, offset, ref, alt
 
     if len(ref) > 0 and len(alt) > 0:
         # Complex indel, don't know how to justify.
-        return offset, ref, alt
+        return chrom, offset, ref, alt
 
     # Get genomic sequence around the lesion.
     start = max(offset - 100, 0)
@@ -1100,7 +1169,7 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
         indel_seq = ref
         cds_offset_end = cds_offset + len(indel_seq)
 
-    # now 3' justify (vs. cDNA not genome) the offset
+    # Now 3' justify (vs. cDNA not genome) the offset
     justify = 'right' if strand == '+' else 'left'
     offset, _, indel_seq = justify_indel(
         cds_offset, cds_offset_end, indel_seq, seq, justify)
@@ -1111,7 +1180,28 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     else:
         ref = indel_seq
 
-    return offset, ref, alt
+    return chrom, offset, ref, alt
+
+
+def hgvs_normalize_variant(chrom, offset, ref, alt, genome, transcript=None):
+    """Convert VCF-style variant to HGVS-style."""
+    if len(ref) == len(alt) == 1:
+        mutation_type = '>'
+    else:
+        # Remove 1bp padding
+        offset += 1
+        ref = ref[1:]
+        alt = alt[1:]
+
+        # 3' justify allele.
+        strand = transcript.strand if transcript else '+'
+        chrom, offset, ref, alt = hgvs_justify_indel(
+            chrom, offset, ref, alt, strand, genome)
+
+        # Represent as duplication if possible.
+        chrom, offset, ref, alt, mutation_type = hgvs_justify_dup(
+            chrom, offset, ref, alt, genome)
+    return chrom, offset, ref, alt, mutation_type
 
 
 def parse_hgvs_name(hgvs_name, genome, transcript=None,
@@ -1145,6 +1235,81 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     return (chrom, start, ref, alt)
 
 
+def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
+                         max_allele_length=4):
+    """
+    Populate a HGVSName from a genomic coordinate.
+
+    chrom: Chromosome name.
+    offset: Genomic offset of allele.
+    ref: Reference allele.
+    alt: Alternate allele.
+    genome: pygr compatible genome object.
+    transcript: Transcript corresponding to allele.
+    max_allele_length: If allele is greater than this use allele length.
+    """
+    # Convert VCF-style variant to HGVS-style.
+    chrom, offset, ref, alt, mutation_type = hgvs_normalize_variant(
+        chrom, offset, ref, alt, genome, transcript)
+
+    # Populate HGVSName parse tree.
+    hgvs = HGVSName()
+
+    # Populate coordinates.
+    if not transcript:
+        # Use genomic coordinate when no transcript is available.
+        hgvs.kind = 'g'
+        hgvs.start = offset
+        hgvs.end = offset + len(ref) - 1
+    else:
+        # Use cDNA coordinates.
+        hgvs.kind = 'c'
+        if (mutation_type == '>' or
+                mutation_type == 'ins' and len(alt) == 1 or
+                mutation_type in ('del', 'delins', 'dup') and len(ref) == 1):
+            # Use a single coordinate.
+            hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset)
+            hgvs.cdna_end = hgvs.cdna_start
+        else:
+            # Use a range of coordinates.
+            if mutation_type == 'ins':
+                # Insert uses coordinates around the insert point.
+                offset_start = offset - 1
+                offset_end = offset
+            else:
+                offset_start = offset
+                offset_end = offset + len(ref) - 1
+            if transcript.strand == '-':
+                offset_start, offset_end = offset_end, offset_start
+            hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset_start)
+            hgvs.cdna_end = genomic_to_cdna_coord(transcript, offset_end)
+
+    # Populate prefix.
+    if transcript:
+        hgvs.transcript = '%s.%d' % (transcript.name, transcript.version)
+        hgvs.gene = transcript.gene.name
+
+    # Convert alleles to transcript strand.
+    if transcript and transcript.strand == '-':
+        ref = revcomp(ref)
+        alt = revcomp(alt)
+
+    # Convert to allele length if alleles are long.
+    ref_len = len(ref)
+    alt_len = len(alt)
+    if ((mutation_type == 'dup' and ref_len > max_allele_length) or
+        (ref_len > max_allele_length or alt_len > max_allele_length)):
+        ref = str(ref_len)
+        alt = str(alt_len)
+
+    # Populate alleles.
+    hgvs.mutation_type = mutation_type
+    hgvs.ref_allele = ref
+    hgvs.alt_allele = alt
+
+    return hgvs
+
+
 def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
                      use_prefix=True, use_gene=True, max_allele_length=4):
     """
@@ -1156,150 +1321,10 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     alt: Alternate allele.
     genome: pygr compatible genome object.
     transcript: Transcript corresponding to allele.
-    use_gene: Include transcript and gene in HGVS name.
+    use_prefix: Include a transcript/gene/chromosome prefix in HGVS name.
+    use_gene: Include gene name in HGVS prefix.
     max_allele_length: If allele is greater than this use allele length.
     """
-
-    def format_hgvs_name_prefix(transcript, use_gene=True):
-        if use_gene:
-            return '%s{%s.%d}' % (
-                transcript.gene.name, transcript.name, transcript.version)
-        else:
-            return '%s.%d' % (transcript.name, transcript.version)
-
-    def format_coords(coords):
-        if len(coords) == 1:
-            return str(coords[0])
-        elif len(coords) == 2:
-            return str(coords[0]) + '_' + str(coords[1])
-        else:
-            raise ValueError('coords should be length 1 or 2')
-
-    def format_allele(chrom, offset, ref, alt, strand, genome):
-
-        # Find cDNA allele sequence.
-        genomic_ref, genomic_alt = ref, alt
-        if strand == "-":
-            ref = revcomp(ref)
-            alt = revcomp(alt)
-
-        ref_len = len(ref)
-        alt_len = len(alt)
-
-        # Format allele.
-        if len(ref) == 1 and len(alt) == 1:
-            # SNP.
-            mutation_type = '>'
-            delta_seq = '%s>%s' % (ref, alt)
-            delta_len = 1
-        elif len(ref) > 0 and len(alt) == 0:
-            # Deletion.
-            mutation_type = 'del'
-            if ref_len <= max_allele_length:
-                delta_seq = "del" + ref
-            else:
-                delta_seq = "del" + str(ref_len)
-            delta_len = ref_len
-        elif len(ref) == 0 and len(alt) > 0:
-            # Insertion.
-            mutation_type = 'ins'
-            if alt_len <= max_allele_length:
-                delta_seq = "ins" + alt
-            else:
-                delta_seq = "ins" + str(alt_len)
-            delta_len = alt_len
-
-            # Check for possible duplication.
-            dup_region = is_duplication(
-                chrom, offset, genomic_ref, genomic_alt, genome)
-            if dup_region:
-                offset = dup_region[0]
-                delta_seq = re.sub("ins", "dup", delta_seq)
-                mutation_type = 'dup'
-        else:
-            # Indel.
-            mutation_type = 'indel'
-            if (ref_len > max_allele_length or alt_len > max_allele_length):
-                delta_seq = "del" + str(ref_len) + "ins" + str(alt_len)
-            else:
-                delta_seq = "del" + ref + "ins" + alt
-            delta_len = ref_len
-
-        return mutation_type, offset, delta_seq, delta_len
-
-    def compute_allele_coords(mutation_type, offset, delta_len, transcript):
-        if delta_len == 1:
-            cds_coords = [CDNACoord(
-                *transcript.genomic_offset_to_cds_coord(offset))]
-        else:
-            if mutation_type == 'ins':
-                # Insert uses coordinates around the insert point.
-                offset_start = offset - 1
-                offset_end = offset
-            else:
-                offset_start = offset
-                offset_end = offset + delta_len - 1
-            if transcript.strand == '-':
-                offset_start, offset_end = offset_end, offset_start
-            cds_coords = [
-                CDNACoord(
-                    *transcript.genomic_offset_to_cds_coord(offset_start)),
-                CDNACoord(
-                    *transcript.genomic_offset_to_cds_coord(offset_end))]
-
-        return cds_coords
-
-    def format_hgvs_name_snp(chrom, offset, ref, alt, genome, transcript):
-        if transcript:
-            coords = [CDNACoord(
-                *transcript.genomic_offset_to_cds_coord(offset))]
-            mutation_type, offset, delta_seq, delta_len = format_allele(
-                chrom, offset, ref, alt, transcript.strand, genome)
-            return 'c.' + format_coords(coords) + delta_seq
-
-        else:
-            mutation_type, offset, delta_seq, delta_len = format_allele(
-                chrom, offset, ref, alt, '+', genome)
-            return 'g.' + str(offset) + delta_seq
-
-    def format_hgvs_name_indel(chrom, offset, ref, alt, genome, transcript):
-        # remove 1bp padding
-        offset += 1
-        ref = ref[1:]
-        alt = alt[1:]
-
-        strand = transcript.strand if transcript else '+'
-
-        # 3' justify allele.
-        shifted_offset, ref, alt = hgvs_justify_indel(
-            chrom, offset, ref, alt, strand, genome)
-
-        # Format the allele part of the name.
-        mutation_type, shifted_offset, delta_seq, delta_len = format_allele(
-            chrom, shifted_offset, ref, alt, strand, genome)
-
-        # If there is a transcript, compute the cDNA coordinate.
-        if transcript:
-            cds_coords = compute_allele_coords(
-                mutation_type, shifted_offset, delta_len, transcript)
-            c_str = 'c.' + format_coords(cds_coords)
-            return c_str + delta_seq
-        else:
-            # No transcript in the DB for some reason, fall back to "g." coord.
-            g_start = offset
-            g_end = g_start + delta_len - 1
-            g_str = "g.%d_%d" % (g_start, g_end)
-            return g_str + delta_seq
-
-    if len(ref) == len(alt) == 1:
-        name = format_hgvs_name_snp(
-            chrom, offset, ref, alt, genome, transcript)
-    else:
-        name = format_hgvs_name_indel(
-            chrom, offset, ref, alt, genome, transcript)
-
-    # Add gene and transcript prefix:
-    if use_prefix:
-        prefix_name = format_hgvs_name_prefix(transcript, use_gene=use_gene)
-        name = prefix_name + ':' + name
-    return name
+    hgvs = variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
+                                max_allele_length=max_allele_length)
+    return hgvs.format(use_prefix=use_prefix, use_gene=use_gene)
