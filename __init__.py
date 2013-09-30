@@ -457,6 +457,13 @@ def cdna_to_genomic_coord(transcript, coord):
     else:
         raise ValueError('unknown CDNACoord landmark "%s"' % coord.landmark)
 
+    # 5' flanking sequence.
+    if pos < 1:
+        if transcript_strand:
+            return transcript.tx_position.chrom_start + pos - 1
+        else:
+            return transcript.tx_position.chrom_stop + pos + 1
+
     # Walk along transcript until we find an exon that contains pos.
     cdna_start = 1
     cdna_end = 1
@@ -468,7 +475,11 @@ def cdna_to_genomic_coord(transcript, coord):
             break
         cdna_start = cdna_end + 1
     else:
-        raise ValueError("coordinate not within an exon")
+        # 3' flanking sequence
+        if transcript_strand:
+            return transcript.cds_position.chrom_stop + coord.coord
+        else:
+            return transcript.cds_position.chrom_start + 2 - coord.coord
 
     # Compute genomic coordinate using offset.
     if transcript_strand:
@@ -483,14 +494,11 @@ def cdna_to_genomic_coord(transcript, coord):
 get_cdna_genomic_coordinate = cdna_to_genomic_coord
 
 
-def genomic_to_cdna_coord(transcript, genomic_offset):
+def genomic_to_cdna_coord(transcript, genomic_coord):
     """Convert a genomic coordinate to a cDNA coordinate and offset.
     """
-    if transcript.is_coding:
-        exons = [exon for exon in transcript.coding_exons if exon is not None]
-    else:
-        exons = [exon.get_as_interval()
-                 for exon in get_exons(transcript)]
+    exons = [exon.get_as_interval()
+             for exon in get_exons(transcript)]
 
     if len(exons) == 0:
         return None
@@ -502,14 +510,14 @@ def genomic_to_cdna_coord(transcript, genomic_offset):
     else:
         exons.sort(key=lambda exon: -exon.chrom_end)
 
-    distances = [exon.distance(genomic_offset)
+    distances = [exon.distance(genomic_coord)
                  for exon in exons]
     min_distance_to_exon = min(map(abs, distances))
 
     coding_offset = 0
     for exon in exons:
         exon_length = exon.chrom_end - exon.chrom_start
-        distance = exon.distance(genomic_offset)
+        distance = exon.distance(genomic_coord)
         if abs(distance) == min_distance_to_exon:
             if strand == "+":
                 exon_start_cds_offset = coding_offset + 1
@@ -517,31 +525,54 @@ def genomic_to_cdna_coord(transcript, genomic_offset):
             else:
                 exon_start_cds_offset = coding_offset + exon_length
                 exon_end_cds_offset = coding_offset + 1
-            # this is the exon we want to annotate against
+            # This is the exon we want to annotate against.
             if distance == 0:
-                # inside the exon
+                # Inside the exon.
                 if strand == "+":
                     coord = (exon_start_cds_offset +
-                             (genomic_offset -
+                             (genomic_coord -
                               (exon.chrom_start + 1)))
                 else:
                     coord = (exon_end_cds_offset +
                              (exon.chrom_end -
-                              genomic_offset))
-                cds_coord = (coord, 0)
+                              genomic_coord))
+                cdna_coord = CDNACoord(coord, 0)
             else:
-                # outside the exon
+                # Outside the exon.
                 if distance > 0:
-                    nearest_coding = exon_start_cds_offset
+                    nearest_exonic = exon_start_cds_offset
                 else:
-                    nearest_coding = exon_end_cds_offset
+                    nearest_exonic = exon_end_cds_offset
                 if strand == "+":
                     distance *= -1
-                cds_coord = (nearest_coding, distance)
+
+                # If outside transcript, don't use offset.
+                if (genomic_coord < transcript.tx_position.chrom_start + 1 or
+                        genomic_coord > transcript.tx_position.chrom_stop):
+                    nearest_exonic += distance
+                    distance = 0
+                cdna_coord = CDNACoord(nearest_exonic, distance)
             break
         coding_offset += exon_length
 
-    return CDNACoord(*cds_coord)
+    # Adjust coordinates for coding transcript.
+    if transcript.is_coding:
+        # Detect if position before start codon.
+        utr5p = get_utr5p_size(transcript) if transcript.is_coding else 0
+        cdna_coord.coord -= utr5p
+        if cdna_coord.coord <= 0:
+            cdna_coord.coord -= 1
+        else:
+            # Detect if position is after stop_codon.
+            exons = get_exons(transcript)
+            stop_codon = find_stop_codon(exons, transcript.cds_position)
+            stop_codon -= utr5p
+            if (cdna_coord.coord > stop_codon or
+                    cdna_coord.coord == stop_codon and cdna_coord.offset > 0):
+                cdna_coord.coord -= stop_codon
+                cdna_coord.landmark = CDNA_STOP_CODON
+
+    return cdna_coord
 
 
 def get_allele(hgvs, genome, transcript=None):
@@ -1296,7 +1327,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     ref_len = len(ref)
     alt_len = len(alt)
     if ((mutation_type == 'dup' and ref_len > max_allele_length) or
-        (ref_len > max_allele_length or alt_len > max_allele_length)):
+            (ref_len > max_allele_length or alt_len > max_allele_length)):
         ref = str(ref_len)
         alt = str(alt_len)
 

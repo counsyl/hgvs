@@ -8,6 +8,8 @@ from ..import CDNA_STOP_CODON
 from ..import HGVSName
 from ..import format_hgvs_name
 from ..import parse_hgvs_name
+from ..import genomic_to_cdna_coord
+from ..import cdna_to_genomic_coord
 from ..utils import read_refgene
 from ..utils import make_transcript
 from .genome import MockGenome
@@ -30,10 +32,36 @@ def test_parse_cdna_coord():
 
 def test_fromat_cdna_coord():
     """
-    Parse cDNA coordinates.
+    Format cDNA coordinates.
     """
     for expected_text, coord in _parse_cdna_coords:
         nose.tools.assert_equal(str(coord), expected_text)
+
+
+def test_genomic_to_cdna_coord():
+    """
+    Convert genomic to cDNA coordinates.
+    """
+    for transcript_name, genomic_coord, cdna_coord_expected in _convert_coords:
+        transcript = get_transcript(transcript_name)
+        cdna_coord = genomic_to_cdna_coord(transcript, genomic_coord[1])
+        nose.tools.assert_equal(
+            cdna_coord, cdna_coord_expected,
+            repr((cdna_coord, cdna_coord_expected,
+                  transcript_name, genomic_coord)))
+
+
+def test_cdna_to_genomic_coord():
+    """
+    Convert cDNA to genomic coordinates.
+    """
+    for transcript_name, genomic_coord_expected, cdna_coord in _convert_coords:
+        transcript = get_transcript(transcript_name)
+        genomic_coord = cdna_to_genomic_coord(transcript, cdna_coord)
+        nose.tools.assert_equal(
+            genomic_coord, genomic_coord_expected[1],
+            repr((genomic_coord, genomic_coord_expected[1],
+                  transcript_name, cdna_coord)))
 
 
 def test_parse_name():
@@ -59,7 +87,7 @@ def test_format_name():
                                     (name, expected_name, attrs))
 
 
-def test_name2variant():
+def test_name_to_variant():
     """
     Convert HGVS names to variant coordinates.
     """
@@ -73,7 +101,7 @@ def test_name2variant():
             repr([hgvs_name, variant, hgvs_variant]))
 
 
-def test_variant2name():
+def test_variant_to_name():
     """
     Convert variant coordinates to HGVS names.
     """
@@ -104,6 +132,49 @@ _parse_cdna_coords = [
     ('-1001-5', CDNACoord(-1001, -5)),
     ('*1001+5', CDNACoord(1001, 5, CDNA_STOP_CODON)),
     ('*1001-5', CDNACoord(1001, -5, CDNA_STOP_CODON)),
+]
+
+
+# Test examples of coverting coordinates.
+_convert_coords = [
+    # Positions near start codon.
+    ('NM_000016.4', ('chr1', 76190473), CDNACoord(1)),
+    ('NM_000016.4', ('chr1', 76190472), CDNACoord(-1)),
+    ('NM_000016.4', ('chr1', 76190043), CDNACoord(-430)),
+
+    # Positions near introns.
+    ('NM_000016.4', ('chr1', 76190502), CDNACoord(30)),
+    ('NM_000016.4', ('chr1', 76190503), CDNACoord(30, 1)),
+    ('NM_000016.4', ('chr1', 76194085), CDNACoord(31, -1)),
+    ('NM_000016.4', ('chr1', 76194086), CDNACoord(31)),
+
+    # Positions near stop codon.
+    ('NM_000016.4', ('chr1', 76228448), CDNACoord(1266)),
+    ('NM_000016.4', ('chr1', 76228449), CDNACoord(1, 0, CDNA_STOP_CODON)),
+    ('NM_000016.4', ('chr1', 76228450), CDNACoord(2, 0, CDNA_STOP_CODON)),
+
+    # Positions near UTR introns.
+    ('NM_007294.3', ('chr17', 41276142), CDNACoord(-19, -10)),
+    ('NM_000038.5', ('chr5', 112090570), CDNACoord(-18)),
+    ('NM_000038.5', ('chr5', 112090569), CDNACoord(-18, -1)),
+    ('NM_000038.5', ('chr5', 112073622), CDNACoord(-19)),
+    ('NM_000023.2', ('chr17', 48252799), CDNACoord(1, 0, CDNA_STOP_CODON)),
+    ('NM_000023.2', ('chr17', 48252800), CDNACoord(2, 0, CDNA_STOP_CODON)),
+    ('NM_000023.2', ('chr17', 48252810), CDNACoord(12, 0, CDNA_STOP_CODON)),
+    ('NM_000023.2', ('chr17', 48252811), CDNACoord(12, 1, CDNA_STOP_CODON)),
+    ('NM_000023.2', ('chr17', 48253073), CDNACoord(13, 0, CDNA_STOP_CODON)),
+    ('NM_000023.2', ('chr17', 48253072), CDNACoord(13, -1, CDNA_STOP_CODON)),
+
+    # Positions flanking the transcript.
+    ('NM_007294.3', ('chr17', 41196312), CDNACoord(1384, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41196311), CDNACoord(1385, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41277500), CDNACoord(-232)),
+    ('NM_007294.3', ('chr17', 41277501), CDNACoord(-233)),
+    ('NM_000016.4', ('chr1', 76190042), CDNACoord(-431)),
+    ('NM_000016.4', ('chr1', 76190043), CDNACoord(-430)),
+    ('NM_000016.4', ('chr1', 76229354), CDNACoord(906, 0, CDNA_STOP_CODON)),
+    ('NM_000016.4', ('chr1', 76229355), CDNACoord(907, 0, CDNA_STOP_CODON)),
+    ('NM_000016.4', ('chr1', 76229356), CDNACoord(908, 0, CDNA_STOP_CODON)),
 ]
 
 
@@ -550,7 +621,7 @@ _name_variants = [
     ('BRCA1{NM_007294.3}:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
 
     # After stop codon.
-    ('NM_000492.3:c.*3A>C', ('chr7', 117307165, 'A', 'C'), False),
+    ('NM_000492.3:c.*3A>C', ('chr7', 117307165, 'A', 'C'), True),
 
     # Genomic simple SNPs.
     ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False),
