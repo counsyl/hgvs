@@ -1340,7 +1340,8 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
 
 
 def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
-                     use_prefix=True, use_gene=True, max_allele_length=4):
+                     use_prefix=True, use_gene=True, use_counsyl=False,
+                     max_allele_length=4):
     """
     Generate a HGVS name from a genomic coordinate.
 
@@ -1356,4 +1357,5 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     """
     hgvs = variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
                                 max_allele_length=max_allele_length)
-    return hgvs.format(use_prefix=use_prefix, use_gene=use_gene)
+    return hgvs.format(use_prefix=use_prefix, use_gene=use_gene,
+                       use_counsyl=use_counsyl)
