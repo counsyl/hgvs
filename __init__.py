@@ -418,7 +418,7 @@ def find_stop_codon(exons, cds_position):
             if cds_position.is_forward_strand:
                 return cdna_pos + stop_pos - exon_start
             else:
-                return cdna_pos + exon_stop - 1 - stop_pos
+                return cdna_pos + exon_stop - stop_pos
         else:
             cdna_pos += exon_stop - exon_start
     raise ValueError('Stop codon is not in any of the exons')
@@ -479,7 +479,7 @@ def cdna_to_genomic_coord(transcript, coord):
         if transcript_strand:
             return transcript.cds_position.chrom_stop + coord.coord
         else:
-            return transcript.cds_position.chrom_start + 2 - coord.coord
+            return transcript.cds_position.chrom_start + 1 - coord.coord
 
     # Compute genomic coordinate using offset.
     if transcript_strand:

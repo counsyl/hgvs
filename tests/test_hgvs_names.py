@@ -141,17 +141,27 @@ _convert_coords = [
     ('NM_000016.4', ('chr1', 76190473), CDNACoord(1)),
     ('NM_000016.4', ('chr1', 76190472), CDNACoord(-1)),
     ('NM_000016.4', ('chr1', 76190043), CDNACoord(-430)),
+    ('NM_007294.3', ('chr17', 41276112), CDNACoord(2)),
+    ('NM_007294.3', ('chr17', 41276113), CDNACoord(1)),
+    ('NM_007294.3', ('chr17', 41276114), CDNACoord(-1)),
 
     # Positions near introns.
     ('NM_000016.4', ('chr1', 76190502), CDNACoord(30)),
     ('NM_000016.4', ('chr1', 76190503), CDNACoord(30, 1)),
     ('NM_000016.4', ('chr1', 76194085), CDNACoord(31, -1)),
     ('NM_000016.4', ('chr1', 76194086), CDNACoord(31)),
+    ('NM_007294.3', ('chr17', 41276034), CDNACoord(80)),
+    ('NM_007294.3', ('chr17', 41276033), CDNACoord(80, 1)),
+    ('NM_007294.3', ('chr17', 41267797), CDNACoord(81, -1)),
+    ('NM_007294.3', ('chr17', 41267796), CDNACoord(81)),
 
     # Positions near stop codon.
     ('NM_000016.4', ('chr1', 76228448), CDNACoord(1266)),
     ('NM_000016.4', ('chr1', 76228449), CDNACoord(1, 0, CDNA_STOP_CODON)),
     ('NM_000016.4', ('chr1', 76228450), CDNACoord(2, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41197695), CDNACoord(5592)),
+    ('NM_007294.3', ('chr17', 41197694), CDNACoord(1, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41197693), CDNACoord(2, 0, CDNA_STOP_CODON)),
 
     # Positions near UTR introns.
     ('NM_007294.3', ('chr17', 41276142), CDNACoord(-19, -10)),
@@ -166,8 +176,9 @@ _convert_coords = [
     ('NM_000023.2', ('chr17', 48253072), CDNACoord(13, -1, CDNA_STOP_CODON)),
 
     # Positions flanking the transcript.
-    ('NM_007294.3', ('chr17', 41196312), CDNACoord(1384, 0, CDNA_STOP_CODON)),
-    ('NM_007294.3', ('chr17', 41196311), CDNACoord(1385, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41196313), CDNACoord(1382, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41196312), CDNACoord(1383, 0, CDNA_STOP_CODON)),
+    ('NM_007294.3', ('chr17', 41196311), CDNACoord(1384, 0, CDNA_STOP_CODON)),
     ('NM_007294.3', ('chr17', 41277500), CDNACoord(-232)),
     ('NM_007294.3', ('chr17', 41277501), CDNACoord(-233)),
     ('NM_000016.4', ('chr1', 76190042), CDNACoord(-431)),
