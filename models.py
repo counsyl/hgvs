@@ -34,6 +34,10 @@ class Transcript(object):
         self.exons = exons if exons else []
 
     @property
+    def full_name(self):
+        return '%s.%d' % (self.name, self.version)
+
+    @property
     def is_coding(self):
         return get_refseq_type(self.name) == 'mRNA'
 
