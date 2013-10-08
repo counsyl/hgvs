@@ -103,10 +103,8 @@ def read_transcripts(refgene_file):
     Read all transcripts in a RefGene file.
     """
     transcripts = {}
-
-    with open(refgene_file) as infile:
-        for trans in imap(make_transcript, read_refgene(infile)):
-            transcripts[trans.name] = trans
-            transcripts[trans.name + '.' + str(trans.version)] = trans
+    for trans in imap(make_transcript, read_refgene(refgene_file)):
+        transcripts[trans.name] = trans
+        transcripts[trans.full_name] = trans
 
     return transcripts

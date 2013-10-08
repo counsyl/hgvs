@@ -31,28 +31,30 @@ ALLELE = 'c.' CDNA_ALLELE    # cDNA
 
 NC_ALLELE =
 RNA_ALLELE =
-CDNA_ALLELE = CDNA_COORD BASE '>' BASE                 # substitution
-            | CDNA_COORD 'ins' BASE                    # 1bp insertion
-            | CDNA_COORD 'del' BASE                    # 1bp deletion
-            | CDNA_COORD 'dup' BASE                    # 1bp duplication
-            | CDNA_COORD_RANGE 'del' BASES             # deletion
-            | CDNA_COORD_RANGE 'ins' BASES             # insertion
-            | CDNA_COORD_RANGE 'dup' BASES             # duplication
-            | CDNA_COORD 'del' BASE 'ins' BASE         # 1bp indel
-            | CDNA_COORD_RANGE 'del' BASES 'ins' BASES # indel
-            | CDNA_COORD_RANGE 'delins' BASES          # indel
+CDNA_ALLELE = CDNA_COORD SINGLE_BASE_CHANGE
+            | CDNA_COORD_RANGE MULTI_BASE_CHANGE
 
 GENOMIC_ALLELE =
-MIT_ALLELE = COORD BASE '>' BASE                 # substitution
-           | COORD 'ins' BASE                    # 1bp insertion
-           | COORD 'del' BASE                    # 1bp deletion
-           | COORD 'dup' BASE                    # 1bp duplication
-           | COORD_RANGE 'del' BASES             # deletion
-           | COORD_RANGE 'ins' BASES             # insertion
-           | COORD_RANGE 'dup' BASES             # duplication
-           | COORD 'del' BASE 'ins' BASE         # 1bp indel
-           | COORD_RANGE 'del' BASES 'ins' BASES # indel
-           | COORD_RANGE 'delins' BASES          # indel
+MIT_ALLELE = COORD SINGLE_BASE_CHANGE
+           | COORD_RANGE MULTI_BASE_CHANGE
+
+SINGLE_BASE_CHANGE = CDNA_ALLELE = CDNA_COORD BASE '>' BASE   # substitution
+                   | CDNA_COORD 'ins' BASE                    # 1bp insertion
+                   | CDNA_COORD 'del' BASE                    # 1bp deletion
+                   | CDNA_COORD 'dup' BASE                    # 1bp duplication
+                   | CDNA_COORD 'ins'                         # 1bp insertion
+                   | CDNA_COORD 'del'                         # 1bp deletion
+                   | CDNA_COORD 'dup'                         # 1bp duplication
+                   | CDNA_COORD 'del' BASE 'ins' BASE         # 1bp indel
+                   | CDNA_COORD 'delins' BASE                 # 1bp indel
+
+MULTI_BASE_CHANGE = COORD_RANGE 'del' BASES             # deletion
+                  | COORD_RANGE 'ins' BASES             # insertion
+                  | COORD_RANGE 'dup' BASES             # duplication
+                  | COORD_RANGE 'del'                   # deletion
+                  | COORD_RANGE 'dup'                   # duplication
+                  | COORD_RANGE 'del' BASES 'ins' BASES # indel
+                  | COORD_RANGE 'delins' BASES          # indel
 
 PROTEIN_ALLELE = TODO...
 
@@ -130,16 +132,20 @@ class HGVSRegex(object):
         CDNA_START + INS + DNA_ALT,
         CDNA_START + DEL + DNA_REF,
         CDNA_START + DUP + DNA_REF,
+        CDNA_START + DEL,
+        CDNA_START + DUP,
 
         # Insertion, deletion, duplication
         CDNA_RANGE + INS + DNA_ALT,
         CDNA_RANGE + DEL + DNA_REF,
         CDNA_RANGE + DUP + DNA_REF,
         CDNA_RANGE + DEL,
+        CDNA_RANGE + DUP,
 
         # Indels
         "(?P<delins>" + CDNA_START + 'del' + DNA_REF + 'ins' + DNA_ALT + ")",
         "(?P<delins>" + CDNA_RANGE + 'del' + DNA_REF + 'ins' + DNA_ALT + ")",
+        "(?P<delins>" + CDNA_START + 'delins' + DNA_ALT + ")",
         "(?P<delins>" + CDNA_RANGE + 'delins' + DNA_ALT + ")",
     ]
 
@@ -184,16 +190,20 @@ class HGVSRegex(object):
         COORD_START + INS + DNA_ALT,
         COORD_START + DEL + DNA_REF,
         COORD_START + DUP + DNA_REF,
+        COORD_START + DEL,
+        COORD_START + DUP,
 
         # Insertion, deletion, duplication
         COORD_RANGE + INS + DNA_ALT,
         COORD_RANGE + DEL + DNA_REF,
         COORD_RANGE + DUP + DNA_REF,
         COORD_RANGE + DEL,
+        COORD_RANGE + DUP,
 
         # Indels
         "(?P<delins>" + COORD_START + 'del' + DNA_REF + 'ins' + DNA_ALT + ")",
         "(?P<delins>" + COORD_RANGE + 'del' + DNA_REF + 'ins' + DNA_ALT + ")",
+        "(?P<delins>" + COORD_START + 'delins' + DNA_ALT + ")",
         "(?P<delins>" + COORD_RANGE + 'delins' + DNA_ALT + ")",
     ]
 
@@ -386,7 +396,7 @@ def get_utr5p_size(transcript):
 
     # Find the exon containing the start codon.
     start_codon = (transcript.cds_position.chrom_start if transcript_strand
-                   else transcript.cds_position.chrom_stop)
+                   else transcript.cds_position.chrom_stop - 1)
     cdna_len = 0
     for exon in exons:
         exon_start = exon.tx_position.chrom_start
@@ -400,7 +410,7 @@ def get_utr5p_size(transcript):
     if transcript_strand:
         return cdna_len + (start_codon - exon_start)
     else:
-        return cdna_len + (exon_end - start_codon)
+        return cdna_len + (exon_end - start_codon - 1)
 
 
 def find_stop_codon(exons, cds_position):
@@ -414,7 +424,7 @@ def find_stop_codon(exons, cds_position):
         exon_start = exon.tx_position.chrom_start
         exon_stop = exon.tx_position.chrom_stop
 
-        if exon_start <= stop_pos < exon_stop:
+        if exon_start <= stop_pos <= exon_stop:
             if cds_position.is_forward_strand:
                 return cdna_pos + stop_pos - exon_start
             else:
@@ -428,7 +438,7 @@ def get_genomic_sequence(genome, chrom, start, end):
     """
     Return a sequence for the genomic region.
 
-    start, end: 0-based, end-exclusive coordinates of the sequence.
+    start, end: 1-based, end-inclusive coordinates of the sequence.
     """
     if start > end:
         return ''
@@ -462,7 +472,7 @@ def cdna_to_genomic_coord(transcript, coord):
         if transcript_strand:
             return transcript.tx_position.chrom_start + pos - 1
         else:
-            return transcript.tx_position.chrom_stop + pos + 1
+            return transcript.tx_position.chrom_stop - pos + 1
 
     # Walk along transcript until we find an exon that contains pos.
     cdna_start = 1

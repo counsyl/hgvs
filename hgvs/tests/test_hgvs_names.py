@@ -3,15 +3,15 @@ from StringIO import StringIO
 
 import nose
 
-from ..import CDNACoord
-from ..import CDNA_STOP_CODON
-from ..import HGVSName
-from ..import format_hgvs_name
-from ..import parse_hgvs_name
-from ..import genomic_to_cdna_coord
-from ..import cdna_to_genomic_coord
-from ..utils import read_refgene
-from ..utils import make_transcript
+from .. import CDNACoord
+from .. import CDNA_STOP_CODON
+from .. import HGVSName
+from .. import cdna_to_genomic_coord
+from .. import format_hgvs_name
+from .. import genomic_to_cdna_coord
+from .. import parse_hgvs_name
+from ..utils import read_transcripts
+from ..variants import normalize_variant
 from .genome import MockGenome
 
 
@@ -119,6 +119,72 @@ def test_variant_to_name():
             nose.tools.assert_equal(
                 hgvs_name, expected_hgvs_name,
                 repr([hgvs_name, expected_hgvs_name, variant]))
+
+
+def _test_name_to_variant_long():
+    """
+    Convert HGVS names to variant coordinates.
+
+    Test a large number of HGVS names from the wild.
+    """
+    genome = MockGenome(filename='hgvs/data/test_hgvs.genome')
+
+    #genome = MockGenome(
+    #    db_filename='/seq-data/seq/misc/genomics/genomes/hg19/hg19.fa')
+
+    # Read transcripts.
+    with open('hgvs/data/genes.refGene') as infile:
+        transcripts = read_transcripts(infile)
+
+    class NoTranscriptError(Exception):
+        pass
+
+    def get_transcript_long(name):
+        """Return a transcript name for the long test."""
+        transcript = transcripts.get(name)
+        if not transcript:
+            raise NoTranscriptError(name)
+        chrom = transcript.tx_position.chrom
+
+        # Skip alternative haplotypes.
+        if '_' in chrom:
+            raise NoTranscriptError(name)
+
+        # Skip sex chromosomes.
+        if chrom in ('', 'chrX', 'chrY'):
+            raise NoTranscriptError(name)
+
+        return transcript
+
+    with open('hgvs/data/test_hgvs.txt') as infile:
+        for i, line in enumerate(infile):
+            row = line.rstrip().split('\t')
+            chrom, offset, ref, alt, hgvs_name = row[:5]
+            offset = int(offset)
+
+            try:
+                hgvs_variant = parse_hgvs_name(
+                    hgvs_name, genome, get_transcript=get_transcript_long)
+            except NoTranscriptError:
+                continue
+            except ValueError as error:
+                yield (nose.tools._ok, False, repr([error, hgvs_name]))
+                continue
+
+            try:
+                unnorm_variant = (chrom, offset, ref, alt)
+                chrom, offset, ref, alts = normalize_variant(
+                    chrom, offset, ref, [alt], genome).variant
+                variant = (chrom, offset, ref, alts[0])
+            except Exception as error:
+                yield (nose.tools._ok, False,
+                       repr([error, hgvs_variant, hgvs_name]))
+                raise
+
+            yield (nose.tools.assert_equal, hgvs_variant, variant,
+                   repr([hgvs_variant, variant, unnorm_variant, hgvs_name]))
+
+    #genome.write('hgvs/data/test_hgvs.genome')
 
 
 # Test examples of cDNA coordinates.
@@ -666,119 +732,117 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = {}
-for trans in map(make_transcript,
-                 read_refgene(StringIO(_refgene))):
-    _transcripts[trans.name] = trans
-    _transcripts[trans.name + '.' + str(trans.version)] = trans
+_transcripts = read_transcripts(StringIO(_refgene))
 
 
 # Mock genome sequence.
 _genome_seq = dict([
     (('chr11', 17496507, 17496508), 'T'),
-    (('chr11', 17496477, 17496507), 'AGCAGCATGAAGGTCAGGATCCACCGCAGG'),
     (('chr11', 17498251, 17498252), 'G'),
-    (('chr11', 17498221, 17498251), 'CACCACGTTGAGCGCGTCCACAAAGCAGCC'),
     (('chr11', 17418842, 17418843), 'G'),
-    (('chr11', 17418812, 17418842), 'CTCCATGTCTGCCAGGTTCCTCACCATCCA'),
     (('chr11', 17464265, 17464266), 'C'),
-    (('chr11', 17464235, 17464265), 'ACCCAGGGCTGGCTGTGTGGGGTGAACTCA'),
     (('chr11', 17464265, 17464266), 'C'),
-    (('chr11', 17464235, 17464265), 'ACCCAGGGCTGGCTGTGTGGGGTGAACTCA'),
     (('chr11', 17464265, 17464266), 'C'),
-    (('chr11', 17464235, 17464265), 'ACCCAGGGCTGGCTGTGTGGGGTGAACTCA'),
     (('chr11', 17452525, 17452526), 'T'),
-    (('chr11', 17452495, 17452525), 'CCCACGAAAGTCTGTGGACAGAGGCACAAG'),
     (('chr11', 17452579, 17452580), 'C'),
-    (('chr11', 17452549, 17452579), 'GGGTCCCTCCCACACTGGAAACGCTCAGCA'),
     (('chr11', 17450106, 17450107), 'C'),
-    (('chr11', 17450076, 17450106), 'ATGCTGGGAGTAGCAAGGGGAGGCCGGGCA'),
     (('chr11', 17449509, 17449510), 'C'),
-    (('chr11', 17449479, 17449509), 'CTCCCATGATCTTCATTAGGCGTGTCCCAC'),
     (('chr11', 17449410, 17449411), 'T'),
-    (('chr11', 17449380, 17449410), 'AGGGGCATGCTGGAGGGGTGGACTGGGCCA'),
     (('chr11', 17449412, 17449413), 'C'),
-    (('chr11', 17449382, 17449412), 'GGGCATGCTGGAGGGGTGGACTGGGCCATA'),
     (('chr11', 17449411, 17449412), 'A'),
-    (('chr11', 17449381, 17449411), 'GGGGCATGCTGGAGGGGTGGACTGGGCCAT'),
     (('chr17', 7126027, 7126037), 'AGCAGAGGTG'),
-    (('chr17', 7125997, 7126027), 'GAAGAAGATGGGCATCAAGGCTTCAAACAC'),
     (('chr17', 7126182, 7126185), 'CGG'),
-    (('chr17', 7126152, 7126182), 'CAGGTACCATGAGAGGCATCATTGCTAAGG'),
     (('chr11', 108004587, 108004593), 'TTTTTT'),
-    (('chr11', 108004557, 108004587), 'AGTAAGTGCTACAAGAACACCCATTGGATC'),
     (('chr20', 43251291, 43251296), 'ATCTG'),
-    (('chr20', 43251261, 43251291), 'GCACCAGTGAGGTAGCTGGACCAGGGGCAG'),
     (('chr17', 48246449, 48246452), 'CAG'),
-    (('chr17', 48246419, 48246449), 'ACTCTGCTGACAGTGACTTCTATCTGGTCC'),
     (('chr2', 241808282, 241808285), 'ATG'),
-    (('chr2', 241808252, 241808282), 'GGTTCCCGAGCGGCAGGTTGGGTGCGGACC'),
     (('chr2', 241808282, 241808285), 'ATG'),
-    (('chr2', 241808252, 241808282), 'GGTTCCCGAGCGGCAGGTTGGGTGCGGACC'),
     (('chr17', 41242937, 41242959), 'GCACACACACACACGCTTTTTA'),
-    (('chr17', 41242907, 41242937), 'GAATGCAAAGGACACCACACACACGCATGT'),
     (('chr1', 76216233, 76216235), 'AA'),
-    (('chr1', 76216203, 76216233), 'GAAAACTTTCGGAAAGCTACTTGTAGAGGT'),
     (('chr2', 241808727, 241808729), 'GG'),
-    (('chr2', 241808697, 241808727), 'GTGCTGGAGCCTGGGGACTCCTTCCTGGTT'),
     (('chr5', 112163692, 112163694), 'AC'),
-    (('chr5', 112163662, 112163692), 'TTGTGGCCCAACTAAAATCTGAAAGTGAAG'),
     (('chr5', 112175545, 112175547), 'AG'),
-    (('chr5', 112175515, 112175545), 'CCATGCAGTGGAATGGTAAGTGGCATTATA'),
     (('chr5', 112175545, 112175547), 'AG'),
-    (('chr5', 112175515, 112175545), 'CCATGCAGTGGAATGGTAAGTGGCATTATA'),
     (('chr1', 76199215, 76199222), 'GTCTTGG'),
-    (('chr1', 76199185, 76199215), 'ATGTGTTGAAACATTTTGATACTGTAGGAG'),
+    (('chr1', 76199196, 76199242), 'CATTTTGATACTGTAGGAGGTCTTGGACTTGGAACTTTTGATGCTT'),  # nopep8
+    (('chr1', 76199184, 76199214), 'AATGTGTTGAAACATTTTGATACTGTAGGA'),
+    (('chr1', 76199220, 76199250), 'GGACTTGGAACTTTTGATGCTTGTTTAATT'),
     (('chr1', 76199231, 76199232), 'T'),
-    (('chr1', 76199201, 76199231), 'TGATACTGTAGGAGGTCTTGGACTTGGAAC'),
+    (('chr1', 76199212, 76199253), 'GAGGTCTTGGACTTGGAACTTTTGATGCTTGTTTAATTAGT'),  # nopep8
+    (('chr1', 76199202, 76199232), 'GATACTGTAGGAGGTCTTGGACTTGGAACT'),
+    (('chr1', 76199233, 76199263), 'TTGATGCTTGTTTAATTAGTGAAGAATTGG'),
     (('chr1', 76199267, 76199274), 'TGGATGT'),
+    (('chr1', 76199248, 76199294), 'TTAGTGAAGAATTGGCTTATGGATGTACAGGGGTTCAGACTGCTAT'),  # nopep8
     (('chr1', 76199237, 76199267), 'TGCTTGTTTAATTAGTGAAGAATTGGCTTA'),
+    (('chr1', 76199273, 76199303), 'TACAGGGGTTCAGACTGCTATTGAAGGAAA'),
     (('chr1', 76200516, 76200520), 'GAAG'),
-    (('chr1', 76200486, 76200516), 'TATTATTGCTGGAAATGATCAACAAAAGAA'),
+    (('chr1', 76200497, 76200540), 'GAAATGATCAACAAAAGAAGAAGTATTTGGGGAGAATGACTGA'),  # nopep8
+    (('chr1', 76200481, 76200511), 'CCTATTATTATTGCTGGAAATGATCAACAA'),
+    (('chr1', 76200514, 76200544), 'AAGAAGTATTTGGGGAGAATGACTGAGGAG'),
     (('chr1', 76200516, 76200520), 'GAAG'),
-    (('chr1', 76200486, 76200516), 'TATTATTGCTGGAAATGATCAACAAAAGAA'),
+    (('chr1', 76200497, 76200540), 'GAAATGATCAACAAAAGAAGAAGTATTTGGGGAGAATGACTGA'),  # nopep8
+    (('chr1', 76200481, 76200511), 'CCTATTATTATTGCTGGAAATGATCAACAA'),
+    (('chr1', 76200514, 76200544), 'AAGAAGTATTTGGGGAGAATGACTGAGGAG'),
     (('chr1', 76198411, 76198413), 'GA'),
-    (('chr1', 76198381, 76198411), 'GAGGAAATCATCCCAGTGGCTGCAGAATAT'),
+    (('chr1', 76198392, 76198433), 'CCCAGTGGCTGCAGAATATGATAAAACTGGTGAAGTAGGTA'),  # nopep8
+    (('chr1', 76198382, 76198412), 'AGGAAATCATCCCAGTGGCTGCAGAATATG'),
+    (('chr1', 76198413, 76198443), 'TAAAACTGGTGAAGTAGGTATATACATTTT'),
     (('chr1', 76198563, 76198564), 'C'),
-    (('chr1', 76198533, 76198563), 'CTAGTATCCAGTCCCCCTAATTAGAAGAGC'),
+    (('chr1', 76198544, 76198585), 'TCCCCCTAATTAGAAGAGCCTGGGAACTTGGTTTAATGAAC'),  # nopep8
+    (('chr1', 76198534, 76198564), 'TAGTATCCAGTCCCCCTAATTAGAAGAGCC'),
+    (('chr1', 76198565, 76198595), 'GGGAACTTGGTTTAATGAACACACACATTC'),
     (('chr1', 76199312, 76199314), 'GG'),
-    (('chr1', 76199282, 76199312), 'TCAGACTGCTATTGAAGGAAATTCTTTGGG'),
+    (('chr1', 76199293, 76199334), 'TTGAAGGAAATTCTTTGGGGGTAAGTGACTTAGAAAATTAA'),  # nopep8
+    (('chr1', 76199279, 76199309), 'GGTTCAGACTGCTATTGAAGGAAATTCTTT'),
+    (('chr1', 76199310, 76199340), 'GGGGTAAGTGACTTAGAAAATTAACTACCT'),
     (('chr1', 76205669, 76205671), 'TT'),
+    (('chr1', 76205650, 76205691), 'TTTATATATTCAAGGCTTATTGTGTAACAGAACCTGGAGCA'),  # nopep8
     (('chr1', 76205639, 76205669), 'TTTCTCTTGTTTTTATATATTCAAGGCTTA'),
+    (('chr1', 76205670, 76205700), 'TGTGTAACAGAACCTGGAGCAGGCTCTGAT'),
     (('chr1', 76227048, 76227049), 'C'),
-    (('chr1', 76227018, 76227048), 'TGTAGAAAAACTAATGAGGGATGCCAAAAT'),
+    (('chr1', 76227029, 76227070), 'TAATGAGGGATGCCAAAATCTATCAGGTAAGGTTAAAGATG'),  # nopep8
+    (('chr1', 76227019, 76227049), 'GTAGAAAAACTAATGAGGGATGCCAAAATC'),
+    (('chr1', 76227050, 76227080), 'ATCAGGTAAGGTTAAAGATGATTTTTTTGG'),
     (('chr1', 76227050, 76227052), 'AT'),
-    (('chr1', 76227020, 76227050), 'TAGAAAAACTAATGAGGGATGCCAAAATCT'),
+    (('chr1', 76227031, 76227072), 'ATGAGGGATGCCAAAATCTATCAGGTAAGGTTAAAGATGAT'),  # nopep8
+    (('chr1', 76227021, 76227051), 'AGAAAAACTAATGAGGGATGCCAAAATCTA'),
+    (('chr1', 76227052, 76227082), 'CAGGTAAGGTTAAAGATGATTTTTTTGGTT'),
     (('chr1', 76199231, 76199232), 'T'),
-    (('chr1', 76199201, 76199231), 'TGATACTGTAGGAGGTCTTGGACTTGGAAC'),
+    (('chr1', 76199212, 76199253), 'GAGGTCTTGGACTTGGAACTTTTGATGCTTGTTTAATTAGT'),  # nopep8
+    (('chr1', 76199202, 76199232), 'GATACTGTAGGAGGTCTTGGACTTGGAACT'),
+    (('chr1', 76199233, 76199263), 'TTGATGCTTGTTTAATTAGTGAAGAATTGG'),
     (('chr7', 117180217, 117180221), 'TTCT'),
-    (('chr7', 117180187, 117180217), 'GTGAGATACTTCAATAGCTCAGCCTTCTTC'),
+    (('chr7', 117180198, 117180241), 'CAATAGCTCAGCCTTCTTCTTCTCAGGGTTCTTTGTGGTGTTT'),  # nopep8
+    (('chr7', 117180180, 117180210), 'AGCCTATGTGAGATACTTCAATAGCTCAGC'),
+    (('chr7', 117180213, 117180243), 'CTTCTTCTCAGGGTTCTTTGTGGTGTTTTT'),
     (('chr7', 117171119, 117171121), 'CA'),
-    (('chr7', 117171089, 117171119), 'CCTACACCCAGCCATTTTTGGCCTTCATCA'),
+    (('chr7', 117171100, 117171141), 'CCATTTTTGGCCTTCATCACATTGGAATGCAGATGAGAATA'),  # nopep8
+    (('chr7', 117171090, 117171120), 'CTACACCCAGCCATTTTTGGCCTTCATCAC'),
+    (('chr7', 117171121, 117171151), 'TTGGAATGCAGATGAGAATAGCTATGTTTA'),
     (('chr7', 117176661, 117176664), 'TAT'),
-    (('chr7', 117176631, 117176661), 'ACTTGTGATTACCTCAGAAATGATTGAAAA'),
+    (('chr7', 117176642, 117176684), 'CCTCAGAAATGATTGAAAATATCCAATCTGTTAAGGCATACT'),  # nopep8
+    (('chr7', 117176630, 117176660), 'GACTTGTGATTACCTCAGAAATGATTGAAA'),
+    (('chr7', 117176662, 117176692), 'ATCCAATCTGTTAAGGCATACTGCTGGGAA'),
     (('chr7', 117182106, 117182107), 'A'),
-    (('chr7', 117182076, 117182106), 'TACAAAAGCAAGAATATAAGACATTGGAAT'),
+    (('chr7', 117182087, 117182129), 'GAATATAAGACATTGGAATATAACTTAACGACTACAGAAGTA'),  # nopep8
+    (('chr7', 117182074, 117182104), 'CTTACAAAAGCAAGAATATAAGACATTGGA'),
+    (('chr7', 117182106, 117182136), 'ATAACTTAACGACTACAGAAGTAGTGATGG'),
     (('chr7', 117292909, 117292910), 'T'),
-    (('chr7', 117292879, 117292909), 'TTCTTTTTTGCTATAGAAAGTATTTATTTT'),
+    (('chr7', 117292890, 117292931), 'TATAGAAAGTATTTATTTTTTCTGGAACATTTAGAAAAAAC'),  # nopep8
+    (('chr7', 117292875, 117292905), 'TCTTTTCTTTTTTGCTATAGAAAGTATTTA'),
+    (('chr7', 117292906, 117292936), 'TTTTTCTGGAACATTTAGAAAAAACTTGGA'),
     (('chr17', 41245340, 41245341), 'T'),
-    (('chr17', 41245310, 41245340), 'TCTTCAGCATTATTAGACACTTTAACTGTT'),
     (('chr17', 41245340, 41245341), 'T'),
-    (('chr17', 41245310, 41245340), 'TCTTCAGCATTATTAGACACTTTAACTGTT'),
     (('chr17', 41245340, 41245341), 'T'),
-    (('chr17', 41245310, 41245340), 'TCTTCAGCATTATTAGACACTTTAACTGTT'),
     (('chr17', 41245340, 41245341), 'T'),
-    (('chr17', 41245310, 41245340), 'TCTTCAGCATTATTAGACACTTTAACTGTT'),
     (('chr7', 117307164, 117307165), 'A'),
-    (('chr7', 117307134, 117307164), 'AGAAGAGGTGCAAGATACAAGGCTTTAGAG'),
     (('chr11', 17496507, 17496508), 'T'),
-    (('chr11', 17496477, 17496507), 'AGCAGCATGAAGGTCAGGATCCACCGCAGG'),
     (('chr17', 7126027, 7126037), 'AGCAGAGGTG'),
-    (('chr17', 7125997, 7126027), 'GAAGAAGATGGGCATCAAGGCTTCAAACAC'),
     (('chr1', 76216233, 76216235), 'AA'),
-    (('chr1', 76216203, 76216233), 'GAAAACTTTCGGAAAGCTACTTGTAGAGGT'),
     (('chr1', 76199213, 76199220), 'AGGTCTT'),
-    (('chr1', 76199183, 76199213), 'CAATGTGTTGAAACATTTTGATACTGTAGG'),
+    (('chr1', 76199194, 76199240), 'AACATTTTGATACTGTAGGAGGTCTTGGACTTGGAACTTTTGATGC'),  # nopep8
+    (('chr1', 76199184, 76199214), 'AATGTGTTGAAACATTTTGATACTGTAGGA'),
+    (('chr1', 76199220, 76199250), 'GGACTTGGAACTTTTGATGCTTGTTTAATT'),
     (('chr1', 76200411, 76200612), 'CATCTCTGAATTTACATATCCAATAAAAATGACTTGATTTTTTAATGTCAATTTTCTTCGGTAGCAAATGCCTATTATTATTGCTGGAAATGATCAACAAAAGAAGAAGTATTTGGGGAGAATGACTGAGGAGCCATTGATGTGTGTGAGTATGTGTAACTGCCGCTTTATTTCACACTTAAGAAGGGAACAAAGGTGCTA'),  # nopep8
     (('chr1', 76198312, 76198513), 'AATAATTTTCCCTTAGAGTTCACCGAACAGCAGAAAGAATTTCAAGCTACTGCTCGTAAATTTGCCAGAGAGGAAATCATCCCAGTGGCTGCAGAATATGATAAAACTGGTGAAGTAGGTATATACATTTTAAAGAGGGAAAAATCTTTTACATTTTTTACAAGATTATGTAATCAAACTATCTGGATTTCAAAATATATT'),  # nopep8
     (('chr1', 76198464, 76198665), 'ATTTTTTACAAGATTATGTAATCAAACTATCTGGATTTCAAAATATATTTTAACTCAGTTCTTTTTCTTCTAGTATCCAGTCCCCCTAATTAGAAGAGCCTGGGAACTTGGTTTAATGAACACACACATTCCAGAGAACTGTGGTAAGCTTTCTTTATATTTTTAATACTGGAATGCATATGAGTAAGAAAAATTGTGGAA'),  # nopep8
@@ -801,5 +865,5 @@ _genome_seq = dict([
     (('chr7', 117182109, 117182111), 'AC'),
     (('chr7', 117292805, 117293006), 'CTACTTGAAATATTTTACAATACAATAAGGGAAAAATAAAAAGTTATTTAAGTTATTCATACTTTCTTCTTCTTTTCTTTTTTGCTATAGAAAGTATTTATTTTTTCTGGAACATTTAGAAAAAACTTGGATCCCTATGAACAGTGGAGTGATCAAGAAATATGGAAAGTTGCAGATGAGGTAAGGCTGCTAACTGAAATG'),  # nopep8
     (('chr7', 117292910, 117292911), 'T'),
-    (('chr7', 117292911, 117292912), 'C'),
+    (('chr7', 117292911, 117292912), 'C')
 ])
