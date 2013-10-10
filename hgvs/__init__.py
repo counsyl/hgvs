@@ -500,10 +500,6 @@ def cdna_to_genomic_coord(transcript, coord):
         return exon_end - (pos - cdna_start) - coord.offset
 
 
-# Backwards compatibility.
-get_cdna_genomic_coordinate = cdna_to_genomic_coord
-
-
 def genomic_to_cdna_coord(transcript, genomic_coord):
     """Convert a genomic coordinate to a cDNA coordinate and offset.
     """
