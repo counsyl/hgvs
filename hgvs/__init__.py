@@ -353,10 +353,10 @@ REFSEQ_PREFIXES = [
     ('ZP_', 'Protein', 'Predicted model, annotated on NZ_ genomic records'),
 ]
 
-REFSEQ_PREFIX_LOOKUP = {
-    prefix: (kind, description)
+REFSEQ_PREFIX_LOOKUP = dict(
+    (prefix, (kind, description))
     for prefix, kind, description in REFSEQ_PREFIXES
-}
+)
 
 
 def get_refseq_type(name):
@@ -590,6 +590,9 @@ def get_allele(hgvs, genome, transcript=None):
     return chrom, start, end, ref, alt
 
 
+_indel_mutation_types = set(['ins', 'del', 'dup', 'delins'])
+
+
 def get_vcf_allele(hgvs, genome, transcript=None):
     """Get an VCF-style allele from a HGVSName, a genome, and a transcript."""
     chrom, start, end = hgvs.get_vcf_coords(transcript)
@@ -597,7 +600,7 @@ def get_vcf_allele(hgvs, genome, transcript=None):
         transcript.tx_position.is_forward_strand if transcript else True)
     ref = get_genomic_sequence(genome, chrom, start, end)
 
-    if hgvs.mutation_type in {'ins', 'del', 'dup', 'delins'}:
+    if hgvs.mutation_type in _indel_mutation_types:
         # Left-pad alternate allele.
         alt = ref[0] + alt
 
