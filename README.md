@@ -5,17 +5,17 @@ The Human Genome Variation Society (HGVS) promotes the discovery and
 sharing of genetic variation in the human population.  As part of facilitating
 variant sharing, the society has produced a series of recommendations for
 how to name and refer to variants within research publications and clinical
-settings.  A compilation of these recommendations are available on their
+settings.  A compilation of these recommendations is available on their
 [website](http://www.hgvs.org/mutnomen/recs.html).
 
-This library provides a simple to use Python API for parsing, formatting, and
+This library provides a simple Python API for parsing, formatting, and
 normalizing HGVS names.  Surprisingly, there are many non-trivial steps
 necessary in handling HGVS names and therefore there is a need for well tested
 libraries that encapsulate these steps.
 
 ## HGVS name example
 
-In most next-gen sequencing applications, variants are first
+In most next-generation sequencing applications, variants are first
 discovered and described in terms of their genomic coordinates such as
 chromosome 7, position 117,199,563 with reference allele `G` and
 alternative allele `T`.  According to the HGVS standard, we can
@@ -65,13 +65,13 @@ discovering a variant should be able to arrive at the same name for
 it.  Such a property is very useful for checking whether a variant has
 been seen before and connecting all known relevant information.  For
 SNPs, this property is fairly easy to achieve.  However, for
-insertions and deletions (indels) near repetative regions, many indels
+insertions and deletions (indels) near repetitive regions, many indels
 are equivalent (e.g. it doesn't matter which `AT` in a run of
 `ATATATAT` was deleted). The VCF file format has chosen to uniquely
 specify such indels by using the most left-aligned genomic coordinate.
 Therefore, compliant variant callers that output VCF will have applied
 this normalization.  The HGVS standard also specifies a normalization
-for such indels, however, it states that indels should use the most 5'
+for such indels. However, it states that indels should use the most 5'
 position in a transcript.  For genes on the positive strand, this is
 the opposite direction specified by VCF.  This library properly
 implements both kinds of variant normalization and allows easy
