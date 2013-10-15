@@ -18,14 +18,13 @@ libraries that encapsulate these steps.
 In most next-gen sequencing applications, variants are first
 discovered and described in terms of their genomic coordinates such as
 chromosome 7, position 117,199,563 with reference allele `G` and
-alternative allele `T` (for reference, this dnSNP rs79282516,
-ClinVar RCV000007607).  According to the HGVS standard, we can
+alternative allele `T`.  According to the HGVS standard, we can
 describe this variant as `NC_000007.13:g.117199563G>T`.  The first
 part of the name is a RefSeq ID `NC_000007.13` for chromosome 7
 version 13.  The `g.` denotes that this is a variant described in
-genomic (chromosomal) coordinates.  Lastly, the chromosomal position,
+genomic (i.e. chromosomal) coordinates.  Lastly, the chromosomal position,
 reference allele, and alternative allele are indicated.  For simple
-single nucleotide changes the '>' character is used.
+single nucleotide changes the `>` character is used.
 
 More commonly, a variant will be described using a cDNA or protein
 style HGVS name.  In the example above, the variant in cDNA style is
@@ -42,7 +41,7 @@ amino-acid sequence (`NP_000483.3`) and gives the reference and
 alternative amino-acid alleles (`Gly` and `Cys`, respectively).
 
 The standard also specifies custom name formats for many mutation
-categories such as insertions (`NM_000492.3:c.1438_1439insA`)
+categories such as insertions (`NM_000492.3:c.1438_1439insA`),
 deletions (`NM_000492.3:c.1438_1440delGGT`),
 duplications (`NM_000492.3:c.1438_1440dupGGT`), and several
 other more complex genomic rearrangements.
@@ -156,4 +155,4 @@ external dependencies.
 
 The library does assume that genome sequence is available through a `pygr`
 compatible `SequenceFileDB` object. For an example of writing a wrapper for
-a different genome sequence back-end, see `hgvs.tests.genome.MockGenome`.
+a different genome sequence back-end, see [hgvs/tests/genome.py].
