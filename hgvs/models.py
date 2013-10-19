@@ -1,15 +1,24 @@
+"""
+Models for representing genomic elements.
+"""
 
 from collections import namedtuple
 
-from . import get_refseq_type
+import hgvs
 
 
 class Position(object):
+    """A position in the genome."""
+
     def __init__(self, chrom, chrom_start, chrom_stop, is_forward_strand):
         self.chrom = chrom
         self.chrom_start = chrom_start
         self.chrom_stop = chrom_stop
         self.is_forward_strand = is_forward_strand
+
+    def __repr__(self):
+        return "<Position %s[%d:%d]>" % (
+            self.chrom, self.chrom_start, self.chrom_stop)
 
 
 class Gene(object):
@@ -39,7 +48,7 @@ class Transcript(object):
 
     @property
     def is_coding(self):
-        return get_refseq_type(self.name) == 'mRNA'
+        return hgvs.get_refseq_type(self.name) == 'mRNA'
 
     @property
     def strand(self):

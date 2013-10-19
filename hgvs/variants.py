@@ -1,8 +1,9 @@
 """
-
-Utitlities for manipulating variants.
-
+Methods for manipulating genetic variants.
 """
+
+
+from .models import Position
 
 
 _COMP = dict(A='T', C='G', G='C', T='A', N='N',
@@ -126,20 +127,6 @@ def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
         is_forward_strand=True)
     return NormalizedVariant(position, ref_sequence, alt_sequences,
                              genome=genome)
-
-
-class Position(object):
-    """A position in the genome."""
-
-    def __init__(self, chrom, chrom_start, chrom_stop, is_forward_strand):
-        self.chrom = chrom
-        self.chrom_start = chrom_start
-        self.chrom_stop = chrom_stop
-        self.is_forward_strand = is_forward_strand
-
-    def __repr__(self):
-        return "<Position %s[%d:%d]>" % (
-            self.chrom, self.chrom_start, self.chrom_stop)
 
 
 class NormalizedVariant(object):

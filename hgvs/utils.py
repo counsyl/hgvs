@@ -1,3 +1,6 @@
+"""
+Helper functions.
+"""
 
 from itertools import imap
 
