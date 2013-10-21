@@ -8,7 +8,7 @@ Definition of which transcript to use coding variants:
 ftp://ftp.ncbi.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 
 
-HGVS language:
+HGVS language currently implemented.
 
 HGVS = ALLELE
      | PREFIX_NAME : ALLELE
@@ -56,7 +56,21 @@ MULTI_BASE_CHANGE = COORD_RANGE 'del' BASES             # deletion
                   | COORD_RANGE 'del' BASES 'ins' BASES # indel
                   | COORD_RANGE 'delins' BASES          # indel
 
-PROTEIN_ALLELE = TODO...
+
+AMINO1 = [GAVLIMFWPSTCYNQDEKRH]
+
+AMINO3 = 'Gly' | 'Ala' | 'Val' | 'Leu' | 'Ile' | 'Met' | 'Phe' | 'Trp' | 'Pro'
+       | 'Ser' | 'Thr' | 'Cys' | 'Tyr' | 'Asn' | 'Gln' | 'Asp' | 'Glu' | 'Lys'
+       | 'Arg' | 'His'
+
+PROTEIN_ALLELE = AMINO3 COORD '='               # no peptide change
+               | AMINO1 COORD '='               # no peptide change
+               | AMINO3 COORD AMINO3 PEP_EXTRA  # peptide change
+               | AMINO1 COORD AMINO1 PEP_EXTRA  # peptide change
+               | AMINO3 COORD '_' AMINO3 COORD PEP_EXTRA        # indel
+               | AMINO1 COORD '_' AMINO1 COORD PEP_EXTRA        # indel
+               | AMINO3 COORD '_' AMINO3 COORD PEP_EXTRA AMINO3 # indel
+               | AMINO1 COORD '_' AMINO1 COORD PEP_EXTRA AMINO1 # indel
 
 # A genomic range:
 COORD_RANGE = COORD '_' COORD
@@ -209,6 +223,48 @@ class HGVSRegex(object):
 
     GENOMIC_ALLELE_REGEXES = [re.compile("^" + regex + "$")
                               for regex in GENOMIC_ALLELE]
+
+
+class ChromosomeSubset(object):
+    """
+    Allow direct access to a subset of the chromosome.
+    """
+    def __init__(self, name, genome=None):
+        self.name = name
+        self.genome = genome
+
+    def __getslice__(self, start, end, step=1):
+        """Return sequence from region [start, end)
+
+        Coordinates are 0-based, end-exclusive."""
+        start -= self.genome.start
+        end -= self.genome.start
+        return self.genome.genome[self.genome.seqid][start:end]
+
+    def __repr__(self):
+        return 'ChromosomeSubset("%s")' % (self.name)
+
+
+class GenomeSubset(object):
+    """
+    Allow the direct access of a subset of the genome.
+    """
+    def __init__(self, genome, chrom, start, end, seqid):
+        self.genome = genome
+        self.chrom = chrom
+        self.start = start
+        self.end = end
+        self.seqid = seqid
+        self._chroms = {}
+
+    def __getitem__(self, chrom):
+        """Return a chromosome by its name."""
+        if chrom in self._chroms:
+            return self._chroms[chrom]
+        else:
+            chromosome = ChromosomeSubset(chrom, self)
+            self._chroms[chrom] = chromosome
+            return chromosome
 
 
 class CDNACoord(object):
@@ -636,8 +692,8 @@ class HGVSName(object):
     Represents a HGVS variant name.
     """
 
-    def __init__(self, name='', chrom='', transcript='', gene='', kind='',
-                 mutation_type=None, start=0, end=0, ref_allele='',
+    def __init__(self, name='', prefix='', chrom='', transcript='', gene='',
+                 kind='', mutation_type=None, start=0, end=0, ref_allele='',
                  ref2_allele='', alt_allele='',
                  cdna_start=None, cdna_end=None, pep_extra=''):
 
@@ -645,6 +701,7 @@ class HGVSName(object):
         self.name = name
 
         # Name parts.
+        self.prefix = prefix
         self.chrom = chrom
         self.transcript = transcript
         self.gene = gene
@@ -690,6 +747,8 @@ class HGVSName(object):
           NM_007294.3(BRCA1):c.2207A>C
           BRCA1{NM_007294.3}:c.2207A>C
         """
+
+        self.prefix = prefix
 
         # No prefix.
         if prefix == '':
@@ -1264,6 +1323,13 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
                 transcript = get_transcript(hgvs.gene)
         if not transcript:
             raise ValueError('transcript is required')
+
+    if transcript and hgvs.prefix in genome:
+        # Reference sequence is directly known, use it.
+        genome = GenomeSubset(genome, transcript.tx_position.chrom,
+                              transcript.tx_position.chrom_start - 1,
+                              transcript.tx_position.chrom_stop,
+                              hgvs.prefix)
 
     chrom, start, end, ref, alt = get_vcf_allele(hgvs, genome, transcript)
     if normalize:

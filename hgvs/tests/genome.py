@@ -63,6 +63,13 @@ class MockGenome(object):
             # Read genome sequence from lookup table.
             self.read(filename)
 
+    def __contains__(self, chrom):
+        """Return True if genome contains chromosome."""
+        if self._genome:
+            return chrom in self._genome
+        else:
+            return chrom in self._chroms
+
     def __getitem__(self, chrom):
         """Return a chromosome by its name."""
         if chrom in self._chroms:
@@ -97,6 +104,8 @@ class MockGenome(object):
             tokens = line.rstrip().split('\t')
             chrom, start, end, seq = tokens
             self._lookup[(chrom, int(start), int(end))] = seq
+            if chrom not in self._lookup:
+                self._chroms[chrom] = MockChromosome(chrom, self)
 
     def write(self, filename):
         """Write a sequence lookup table to file."""
