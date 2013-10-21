@@ -1324,12 +1324,12 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
         if not transcript:
             raise ValueError('transcript is required')
 
-    if transcript and hgvs.prefix in genome:
+    if transcript and hgvs.transcript in genome:
         # Reference sequence is directly known, use it.
         genome = GenomeSubset(genome, transcript.tx_position.chrom,
                               transcript.tx_position.chrom_start - 1,
                               transcript.tx_position.chrom_stop,
-                              hgvs.prefix)
+                              hgvs.transcript)
 
     chrom, start, end, ref, alt = get_vcf_allele(hgvs, genome, transcript)
     if normalize:

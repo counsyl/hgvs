@@ -2,6 +2,11 @@
 from StringIO import StringIO
 
 import nose
+try:
+    from pygr.seqdb import SequenceFileDB
+except:
+    SequenceFileDB
+    SequenceFileDB = None
 
 from .. import CDNACoord
 from .. import CDNA_STOP_CODON
@@ -118,6 +123,26 @@ def test_variant_to_name():
             nose.tools.assert_equal(
                 hgvs_name, expected_hgvs_name,
                 repr([hgvs_name, expected_hgvs_name, variant]))
+
+
+def test_name_to_variant_refseqs():
+    """
+    Convert HGVS names to variant coordinates using refseqs directly.
+    """
+    if not SequenceFileDB:
+        print 'skip test_name_to_variant_refseqs'
+        return
+    genome = SequenceFileDB('hgvs/data/test_refseqs.fa')
+
+    for hgvs_name, variant, canonical in _name_variants:
+        if 'NM_' not in hgvs_name:
+            # Only test transcript HGVS names.
+            continue
+        hgvs_variant = parse_hgvs_name(hgvs_name, genome,
+                                       get_transcript=get_transcript)
+        nose.tools.assert_equal(
+            hgvs_variant, variant,
+            repr([hgvs_name, variant, hgvs_variant]))
 
 
 # Test examples of cDNA coordinates.
