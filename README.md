@@ -94,13 +94,24 @@ provided by `hgvs`.
 
 ```python
 import hgvs
+import hgvs.utils
 from pygr.seqdb import SequenceFileDB
+
+# Obtain genome sequence.  Here is one example:
+"""
+# Run in terminal
+wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
+tar zxvf chromFa.tar.gz
+cat chr*.fa > hg19.fa
+rm chr*.fa chromFa.tar.gz
+"""
 
 # Read genome sequence using pygr.
 genome = SequenceFileDB('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
-transcripts = hgvs.utils.read_transcripts('genes.refGene')
+with open('hgvs/data/genes.refGene') as infile:
+    transcripts = hgvs.utils.read_transcripts(infile)
 
 # Provide a callback for fetching a transcript by its name.
 def get_transcript(name):
@@ -118,7 +129,7 @@ chrom, offset, ref, alt = ('chr11', 17496508, 'T', 'C')
 transcript = get_transcript('NM_000352.3')
 hgvs_name = hgvs.format_hgvs_name(
     chrom, offset, ref, alt, genome, transcript)
-# Returns 'NM_000352.3:c.215A>G'
+# Returns 'NM_000352.3(ABCC8):c.215A>G'
 ```
 
 The `hgvs` library can also perform just the parsing step and provide
