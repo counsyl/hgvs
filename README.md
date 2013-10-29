@@ -97,15 +97,6 @@ import hgvs
 import hgvs.utils
 from pygr.seqdb import SequenceFileDB
 
-# Obtain genome sequence.  Here is one example:
-"""
-# Run in terminal
-wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
-tar zxvf chromFa.tar.gz
-cat chr*.fa > hg19.fa
-rm chr*.fa chromFa.tar.gz
-"""
-
 # Read genome sequence using pygr.
 genome = SequenceFileDB('hg19.fa')
 
