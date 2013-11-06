@@ -146,8 +146,16 @@ hgvs_name = hgvs.HGVSName('NM_000352.3:c.215-10A>G')
 
 This library can be installed using the `setup.py` file as follows:
 
-```
+```sh
 python setup.py install
+```
+
+## Tests
+
+Test cases can be run by running
+
+```sh
+python setup.py nosetests
 ```
 
 ## Requirements
