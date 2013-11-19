@@ -26,8 +26,8 @@ def main():
         author_email='rasmus@counsyl.com',
         packages=['hgvs', 'hgvs.tests'],
         scripts=[],
-        install_requires=[str(line.req) for line in
-                          parse_requirements('requirements.txt')],
+        tests_require=[str(line.req) for line in
+                       parse_requirements('requirements-dev.txt')],
         setup_requires=['nose==1.3.0'],
     )
 
