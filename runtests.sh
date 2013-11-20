@@ -10,7 +10,7 @@ virtualenv $VIRT_ENV
 
 echo "Activating virtual env..."
 source $VIRT_ACTIVATE
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 echo "Running tests..."
 $VIRT_PYTHON setup.py nosetests
