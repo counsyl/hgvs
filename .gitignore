@@ -1,5 +1,9 @@
 *.py[cod]
 
+# FASTA files
+*.fa.seqlen
+*.fa.pureseq
+
 # C extensions
 *.so
 

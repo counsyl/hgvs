@@ -1,2 +1,1 @@
-nose
-pygr
+pygr==0.8.2
