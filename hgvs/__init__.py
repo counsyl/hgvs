@@ -1402,7 +1402,8 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     ref_len = len(ref)
     alt_len = len(alt)
     if ((mutation_type == 'dup' and ref_len > max_allele_length) or
-            (ref_len > max_allele_length or alt_len > max_allele_length)):
+            (mutation_type != 'dup' and
+             (ref_len > max_allele_length or alt_len > max_allele_length))):
         ref = str(ref_len)
         alt = str(alt_len)
 
