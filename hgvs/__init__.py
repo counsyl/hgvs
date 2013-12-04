@@ -957,7 +957,7 @@ class HGVSName(object):
     def __unicode__(self):
         return self.format()
 
-    def format(self, use_prefix=True, use_gene=True, use_counsyl=True):
+    def format(self, use_prefix=True, use_gene=True, use_counsyl=False):
         """Generate a HGVS name as a string."""
 
         if self.kind == 'c':
@@ -977,7 +977,7 @@ class HGVSName(object):
         else:
             return allele
 
-    def format_prefix(self, use_gene=True, use_counsyl=True):
+    def format_prefix(self, use_gene=True, use_counsyl=False):
         """
         Generate HGVS trancript/gene prefix.
 

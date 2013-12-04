@@ -233,7 +233,7 @@ _parse_names = [
          'transcript': 'NM_007294.3',
          'gene': 'BRCA1',
      }),
-    ('BRCA1{NM_007294.3}:c.2207A>C', True,
+    ('NM_007294.3(BRCA1):c.2207A>C', True,
      {
          'transcript': 'NM_007294.3',
          'gene': 'BRCA1',
@@ -270,7 +270,7 @@ _parse_names = [
          'alt_allele': 'C',
          'mutation_type': '>',
      }),
-    ('BRCA1{NM_007294.3}:g.2207A>C', True,
+    ('NM_007294.3(BRCA1):g.2207A>C', True,
      {
          'transcript': 'NM_007294.3',
          'gene': 'BRCA1',
