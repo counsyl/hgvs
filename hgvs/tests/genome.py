@@ -3,8 +3,9 @@ from ..variants import revcomp
 
 try:
     from pygr.seqdb import SequenceFileDB
-except:
+    # Allow pyflakes to ignore redefinition in except clause.
     SequenceFileDB
+except:
     SequenceFileDB = None
 
 
