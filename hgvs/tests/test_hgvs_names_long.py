@@ -19,7 +19,7 @@ def test_name_to_variant_long():
     #    db_filename='/seq-data/seq/misc/genomics/genomes/hg19/hg19.fa')
 
     # Read transcripts.
-    with open('hgvs/data/genes.refGene') as infile:
+    with open('hgvs/data/genes.refGene', 'r') as infile:
         transcripts = read_transcripts(infile)
 
     class NoTranscriptError(Exception):
@@ -42,7 +42,8 @@ def test_name_to_variant_long():
 
         return transcript
 
-    with open('hgvs/data/test_hgvs.txt') as infile:
+    errors = []
+    with open('hgvs/data/test_hgvs.txt', 'r') as infile:
         for i, line in enumerate(infile):
             row = line.rstrip().split('\t')
             chrom, offset, ref, alt, hgvs_name = row[:5]
@@ -53,21 +54,14 @@ def test_name_to_variant_long():
                     hgvs_name, genome, get_transcript=get_transcript_long)
             except NoTranscriptError:
                 continue
-            except ValueError as error:
-                yield (nose.tools._ok, False, repr([error, hgvs_name]))
-                continue
 
-            try:
-                unnorm_variant = (chrom, offset, ref, alt)
-                chrom, offset, ref, alts = normalize_variant(
-                    chrom, offset, ref, [alt], genome).variant
-                variant = (chrom, offset, ref, alts[0])
-            except Exception as error:
-                yield (nose.tools._ok, False,
-                       repr([error, hgvs_variant, hgvs_name]))
-                raise
+            unnorm_variant = (chrom, offset, ref, alt)
+            chrom, offset, ref, alts = normalize_variant(
+                chrom, offset, ref, [alt], genome).variant
+            variant = (chrom, offset, ref, alts[0])
 
-            yield (nose.tools.assert_equal, hgvs_variant, variant,
-                   repr([hgvs_variant, variant, unnorm_variant, hgvs_name]))
+            if hgvs_variant != variant:
+                errors.append(repr([hgvs_variant, variant,
+                                    unnorm_variant, hgvs_name]))
 
-    #genome.write('hgvs/data/test_hgvs.genome')
+    assert not errors, '\n'.join(errors)
