@@ -1,4 +1,3 @@
---index-url http://pypi.counsyl.com/counsyl/prod/+simple/
 codequality==0.2-dev
 nose==1.2.1
 pep8==1.4.4
