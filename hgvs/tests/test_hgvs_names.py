@@ -283,6 +283,18 @@ _parse_names = [
          'mutation_type': '>',
      }),
 
+    # cDNA no change.
+    ('BRCA1:c.101A=', True,
+     {
+         'gene': 'BRCA1',
+         'kind': 'c',
+         'cdna_start': CDNACoord(101),
+         'cdna_end': CDNACoord(101),
+         'ref_allele': 'A',
+         'alt_allele': 'A',
+         'mutation_type': '=',
+     }),
+
     # cDNA 1bp mutations.
     ('BRCA1:c.101A>C', True,
      {
@@ -453,6 +465,18 @@ _parse_names = [
          'alt_allele': 'Aln',
          'pep_extra': '?fs',
          'mutation_type': 'delins',
+     }),
+
+    # Genomic no change.
+    ('BRCA1:g.101A=', True,
+     {
+         'gene': 'BRCA1',
+         'kind': 'g',
+         'start': 101,
+         'end': 101,
+         'ref_allele': 'A',
+         'alt_allele': 'A',
+         'mutation_type': '=',
      }),
 
     # Genomic 1bp mutations.
