@@ -12,5 +12,5 @@ test:
   - unit tests:
       script: nosetests --with-xunit
       xunit: nosetests.xml
-      timeout: 300
-  
+      timeout: 600
+ 
