@@ -38,7 +38,8 @@ GENOMIC_ALLELE =
 MIT_ALLELE = COORD SINGLE_BASE_CHANGE
            | COORD_RANGE MULTI_BASE_CHANGE
 
-SINGLE_BASE_CHANGE = CDNA_ALLELE = CDNA_COORD BASE '>' BASE   # substitution
+SINGLE_BASE_CHANGE = CDNA_ALLELE = CDNA_COORD BASE '='        # no change
+                   | CDNA_COORD BASE '>' BASE                 # substitution
                    | CDNA_COORD 'ins' BASE                    # 1bp insertion
                    | CDNA_COORD 'del' BASE                    # 1bp deletion
                    | CDNA_COORD 'dup' BASE                    # 1bp duplication
@@ -118,6 +119,7 @@ class HGVSRegex(object):
     DNA_ALT = "(?P<alt>" + BASES + ")"
 
     # Mutation types
+    EQUAL = "(?P<mutation_type>=)"
     SUB = "(?P<mutation_type>>)"
     INS = "(?P<mutation_type>ins)"
     DEL = "(?P<mutation_type>del)"
@@ -139,6 +141,9 @@ class HGVSRegex(object):
 
     # cDNA allele syntax
     CDNA_ALLELE = [
+        # No change
+        CDNA_START + DNA_REF + EQUAL,
+
         # Substitution
         CDNA_START + DNA_REF + SUB + DNA_ALT,
 
@@ -197,6 +202,9 @@ class HGVSRegex(object):
 
     # Genomic allele syntax
     GENOMIC_ALLELE = [
+        # No change
+        COORD_START + DNA_REF + EQUAL,
+
         # Substitution
         COORD_START + DNA_REF + SUB + DNA_ALT,
 
@@ -857,6 +865,10 @@ class HGVSName(object):
                 # Convert duplication alleles.
                 if self.mutation_type == "dup":
                     self.alt_allele = self.ref_allele * 2
+
+                # Convert no match alleles.
+                if self.mutation_type == "=":
+                    self.alt_allele = self.ref_allele
                 return
 
         raise InvalidHGVSName(details, 'cDNA allele')
@@ -944,6 +956,10 @@ class HGVSName(object):
                 # Convert duplication alleles.
                 if self.mutation_type == "dup":
                     self.alt_allele = self.ref_allele * 2
+
+                # Convert no match alleles.
+                if self.mutation_type == "=":
+                    self.alt_allele = self.ref_allele
                 return
 
         raise InvalidHGVSName(details, 'genomic allele')
@@ -1019,6 +1035,11 @@ class HGVSName(object):
         """
         Generate HGVS DNA allele.
         """
+        if self.mutation_type == '=':
+            # No change.
+            # example: 101A=
+            return self.ref_allele + '='
+
         if self.mutation_type == '>':
             # SNP.
             # example: 101A>C
@@ -1283,7 +1304,10 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
 def hgvs_normalize_variant(chrom, offset, ref, alt, genome, transcript=None):
     """Convert VCF-style variant to HGVS-style."""
     if len(ref) == len(alt) == 1:
-        mutation_type = '>'
+        if ref == alt:
+            mutation_type = '='
+        else:
+            mutation_type = '>'
     else:
         # Remove 1bp padding
         offset += 1
