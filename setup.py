@@ -28,7 +28,6 @@ def main():
         scripts=[],
         tests_require=[str(line.req) for line in
                        parse_requirements('requirements-dev.txt')],
-        setup_requires=['nose==1.3.0'],
     )
 
 if __name__ == '__main__':
