@@ -89,8 +89,8 @@ transcript model or a callback for fetching the transcript model
 (needed for transcript coordinate calculations).  This library makes
 as few assumptions as possible about how this external data is stored.
 In this example, the genome sequence is read using the `pygr` library
-and transcripts are read from a RefSeqGenes flat-file using methods
-provided by `hgvs`.
+and transcripts are read from a RefSeqGenes flat-file (similar to the
+(genePred extended format) using methods provided by `hgvs`.
 
 ```python
 import hgvs
@@ -102,6 +102,10 @@ genome = SequenceFileDB('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('hgvs/data/genes.refGene') as infile:
+    # Following code line is for compatibility with Ensembl GenePred files:
+    # Ensembl transcripts don't include transcript version in .gtf files (gene set files). To assure version
+    # compatibility, Ensembl annotation and gtf files must have the same version!!
+    name = name.split('.')[0] if name[:4] == 'ENST' else name
     transcripts = hgvs.utils.read_transcripts(infile)
 
 # Provide a callback for fetching a transcript by its name.

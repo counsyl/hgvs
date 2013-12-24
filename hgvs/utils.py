@@ -71,7 +71,7 @@ def make_transcript(transcript_json):
 
     transcript = Transcript(
         name=name,
-        version=int(version),
+        version = int(version) if name[:4] != "ENST" else None,
         gene=transcript_json['gene_name'],
         tx_position=Position(
             transcript_json['chrom'],
