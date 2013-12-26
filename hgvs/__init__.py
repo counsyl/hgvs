@@ -589,7 +589,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
             else:
                 exon_start_cds_offset = coding_offset + exon_length
                 exon_end_cds_offset = coding_offset + 1
-                # This is the exon we want to annotate against.
+            # This is the exon we want to annotate against.
             if distance == 0:
                 # Inside the exon.
                 if strand == "+":
@@ -612,7 +612,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
 
                 # If outside transcript, don't use offset.
                 if (genomic_coord < transcript.tx_position.chrom_start + 1 or
-                            genomic_coord > transcript.tx_position.chrom_stop):
+                        genomic_coord > transcript.tx_position.chrom_stop):
                     nearest_exonic += distance
                     distance = 0
                 cdna_coord = CDNACoord(nearest_exonic, distance)
@@ -632,7 +632,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
             stop_codon = find_stop_codon(exons, transcript.cds_position)
             stop_codon -= utr5p
             if (cdna_coord.coord > stop_codon or
-                            cdna_coord.coord == stop_codon and cdna_coord.offset > 0):
+                    cdna_coord.coord == stop_codon and cdna_coord.offset > 0):
                 cdna_coord.coord -= stop_codon
                 cdna_coord.landmark = CDNA_STOP_CODON
 
@@ -773,6 +773,11 @@ class HGVSName(object):
         if match:
             self.transcript = match.group('transcript')
             self.gene = match.group('gene')
+            return
+
+        # Determine using Ensembl type.
+        if prefix.startswith('ENST'):
+            self.transcript = prefix.split('.')[0]
             return
 
         # Determine using refseq type.
@@ -1065,16 +1070,15 @@ class HGVSName(object):
           Frameshift: Glu1161_Ser1164?fs
         """
         if (self.start == self.end and
-                        self.ref_allele == self.ref2_allele ==
-                    self.alt_allele):
+                self.ref_allele == self.ref2_allele == self.alt_allele):
             # Match.
             # Example: Glu1161=
             pep_extra = self.pep_extra if self.pep_extra else '='
             return self.ref_allele + str(self.start) + pep_extra
 
         elif (self.start == self.end and
-                      self.ref_allele == self.ref2_allele and
-                      self.ref_allele != self.alt_allele):
+                self.ref_allele == self.ref2_allele and
+                self.ref_allele != self.alt_allele):
             # Change.
             # Example: Glu1161Ser
             return (self.ref_allele + str(self.start) +
@@ -1371,8 +1375,8 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
         # Use cDNA coordinates.
         hgvs.kind = 'c'
         if (mutation_type == '>' or
-                        mutation_type == 'ins' and len(alt) == 1 or
-                        mutation_type in ('del', 'delins', 'dup') and len(ref) == 1):
+                mutation_type == 'ins' and len(alt) == 1 or
+                mutation_type in ('del', 'delins', 'dup') and len(ref) == 1):
             # Use a single coordinate.
             hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset)
             hgvs.cdna_end = hgvs.cdna_start
@@ -1392,8 +1396,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
 
     # Populate prefix.
     if transcript:
-        hgvs.transcript = '%s.%d' % (
-            transcript.name, transcript.version) if transcript.version is not None else '%s' % transcript.name
+        hgvs.transcript = transcript.full_name
         hgvs.gene = transcript.gene.name
 
     # Convert alleles to transcript strand.
@@ -1406,7 +1409,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     alt_len = len(alt)
     if ((mutation_type == 'dup' and ref_len > max_allele_length) or
             (mutation_type != 'dup' and
-                 (ref_len > max_allele_length or alt_len > max_allele_length))):
+                (ref_len > max_allele_length or alt_len > max_allele_length))):
         ref = str(ref_len)
         alt = str(alt_len)
 

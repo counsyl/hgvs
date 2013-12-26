@@ -44,7 +44,10 @@ class Transcript(object):
 
     @property
     def full_name(self):
-        return '%s.%d' % (self.name, self.version) if self.version is not None else '%s' % (self.name)
+        if self.version is not None:
+            return '%s.%d' % (self.name, self.version)
+        else:
+            return self.name
 
     @property
     def is_coding(self):
