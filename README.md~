@@ -102,6 +102,10 @@ genome = SequenceFileDB('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('hgvs/data/genes.refGene') as infile:
+    # Following code line is for compatibility with Ensembl GenePred files:
+    # Ensembl transcripts don't include transcript version in .gtf files (gene set files). To assure version
+    # compatibility, Ensembl annotation and gtf files must have the same version!!
+    name = name.split('.')[0] if name[:4] == 'ENST' else name
     transcripts = hgvs.utils.read_transcripts(infile)
 
 # Provide a callback for fetching a transcript by its name.
