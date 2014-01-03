@@ -12,7 +12,7 @@ def test_name_to_variant_long():
     """
     genome = MockGenomeTestFile(
         db_filename='hg19.fa',
-        filename='hgvs/data/test_hgvs.genome',
+        filename='hgvs/tests/data/test_hgvs.genome',
         create_data=False)
 
     # Read transcripts.
@@ -40,7 +40,7 @@ def test_name_to_variant_long():
         return transcript
 
     errors = []
-    with open('hgvs/data/test_hgvs.txt', 'r') as infile:
+    with open('hgvs/tests/data/test_hgvs.txt', 'r') as infile:
         for i, line in enumerate(infile):
             row = line.rstrip().split('\t')
             chrom, offset, ref, alt, hgvs_name = row[:5]

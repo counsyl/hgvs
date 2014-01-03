@@ -97,7 +97,7 @@ def test_name_to_variant():
     """
     genome = MockGenomeTestFile(
         db_filename='hg19.fa',
-        filename='hgvs/data/test_name_to_variant.genome',
+        filename='hgvs/tests/data/test_name_to_variant.genome',
         create_data=False)
 
     for hgvs_name, variant, canonical in _name_variants:
@@ -114,7 +114,7 @@ def test_variant_to_name():
     """
     genome = MockGenomeTestFile(
         db_filename='hg19.fa',
-        filename='hgvs/data/test_variant_to_name.genome',
+        filename='hgvs/tests/data/test_variant_to_name.genome',
         create_data=False)
 
     for expected_hgvs_name, variant, canonical in _name_variants:
@@ -138,7 +138,7 @@ def test_name_to_variant_refseqs():
     if not SequenceFileDB:
         print 'skip test_name_to_variant_refseqs'
         return
-    genome = SequenceFileDB('hgvs/data/test_refseqs.fa')
+    genome = SequenceFileDB('hgvs/tests/data/test_refseqs.fa')
 
     for hgvs_name, variant, canonical in _name_variants:
         if 'NM_' not in hgvs_name:
