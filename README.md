@@ -89,8 +89,8 @@ transcript model or a callback for fetching the transcript model
 (needed for transcript coordinate calculations).  This library makes
 as few assumptions as possible about how this external data is stored.
 In this example, the genome sequence is read using the `pygr` library
-and transcripts are read from a RefSeqGenes flat-file using methods
-provided by `hgvs`.
+and transcripts are read from a RefSeqGenes flat-file (similar to the
+(genePred extended format) using methods provided by `hgvs`.
 
 ```python
 import hgvs

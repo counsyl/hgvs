@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Example usage of HGVS library.
+Example usage of HGVS library with Ensembl predGene data.
 
 To run the script, first begin by opening a terminal in the root directory
 of this software package. Note, the root directory should contain
@@ -14,9 +14,12 @@ example. Genome sequence can be fetched using the following commands:
   cat chr*.fa > hg19.fa
   rm chr*.fa chromFa.tar.gz
 
+This example already includes a transformed Ensembl genePred file, obtained
+from Ensembl's gene set in .gtf format for human and version 73
+
 This example script can be run using:
 
-  python examples/example1.py
+  python examples/example2.py
 
 The following output should be displayed:
 
@@ -25,16 +28,16 @@ The following output should be displayed:
   ('NM_000352.3', 'c', '>', CDNACoord(215, -10), CDNACoord(215, -10), 'A', 'G')
 
 """
-
 import hgvs
 import hgvs.utils
 from pygr.seqdb import SequenceFileDB
+
 
 # Read genome sequence using pygr.
 genome = SequenceFileDB('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
-with open('hgvs/data/genes.refGene') as infile:
+with open('hgvs/data/genes_Ensembl.genePred') as infile:
     transcripts = hgvs.utils.read_transcripts(infile)
 
 
@@ -42,26 +45,24 @@ with open('hgvs/data/genes.refGene') as infile:
 def get_transcript(name):
     return transcripts.get(name)
 
-
 # Parse the HGVS name into genomic coordinates and alleles.
 chrom, offset, ref, alt = hgvs.parse_hgvs_name(
-    'NM_000352.3:c.215A>G', genome, get_transcript=get_transcript)
+    'ENST00000399113.3:c.881C>A', genome, get_transcript=get_transcript)
 print chrom, offset, ref, alt
-# Returns variant in VCF style: ('chr11', 17496508, 'T', 'C')
+# Returns variant in VCF style: ('chr18', 32400759, 'C', 'A')
 # Notice that since the transcript is on the negative strand, the alleles
 # are reverse complemented during conversion.
 
-
 # Format an HGVS name.
-chrom, offset, ref, alt = ('chr11', 17496508, 'T', 'C')
-transcript = get_transcript('NM_000352.3')
+chrom, offset, ref, alt = ('chr18', 32400759, 'C', 'A')
+transcript = get_transcript('ENST00000399113')
 hgvs_name = hgvs.format_hgvs_name(
     chrom, offset, ref, alt, genome, transcript)
 print hgvs_name
-# Returns 'NM_000352.3(ABCC8):c.215A>G'
+# Returns 'ENST00000399113(ENSG00000134769):c.881C>A'
 
 
-hgvs_name = hgvs.HGVSName('NM_000352.3:c.215-10A>G')
+hgvs_name = hgvs.HGVSName('ENST00000399113.3:c.881C>A')
 # fields of the HGVS name are available as attributes:
 #
 # hgvs_name.transcript = 'NM_000352.3'

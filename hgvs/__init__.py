@@ -229,6 +229,7 @@ class ChromosomeSubset(object):
     """
     Allow direct access to a subset of the chromosome.
     """
+
     def __init__(self, name, genome=None):
         self.name = name
         self.genome = genome
@@ -249,6 +250,7 @@ class GenomeSubset(object):
     """
     Allow the direct access of a subset of the genome.
     """
+
     def __init__(self, genome, chrom, start, end, seqid):
         self.genome = genome
         self.chrom = chrom
@@ -773,6 +775,11 @@ class HGVSName(object):
             self.gene = match.group('gene')
             return
 
+        # Determine using Ensembl type.
+        if prefix.startswith('ENST'):
+            self.transcript = prefix
+            return
+
         # Determine using refseq type.
         refseq_type = get_refseq_type(prefix)
         if refseq_type in ('mRNA', 'RNA'):
@@ -1063,8 +1070,7 @@ class HGVSName(object):
           Frameshift: Glu1161_Ser1164?fs
         """
         if (self.start == self.end and
-                self.ref_allele == self.ref2_allele ==
-                self.alt_allele):
+                self.ref_allele == self.ref2_allele == self.alt_allele):
             # Match.
             # Example: Glu1161=
             pep_extra = self.pep_extra if self.pep_extra else '='
@@ -1254,7 +1260,7 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     # Get genomic sequence around the lesion.
     start = max(offset - 100, 0)
     end = offset + 100
-    seq = unicode(genome[str(chrom)][start-1:end]).upper()
+    seq = unicode(genome[str(chrom)][start - 1:end]).upper()
     cds_offset = offset - start
 
     # indel -- strip off the ref base to get the actual lesion sequence
@@ -1318,7 +1324,11 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     if hgvs.kind == 'c' and not transcript:
         if get_transcript:
             if hgvs.transcript:
-                transcript = get_transcript(hgvs.transcript)
+                if hgvs.transcript.startswith('ENST'):
+                    # ENSEMBL doesn't include version number in gtf files
+                    transcript = get_transcript(hgvs.transcript.split('.')[0])
+                else:
+                    transcript = get_transcript(hgvs.transcript)
             elif hgvs.gene:
                 transcript = get_transcript(hgvs.gene)
         if not transcript:
@@ -1390,7 +1400,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
 
     # Populate prefix.
     if transcript:
-        hgvs.transcript = '%s.%d' % (transcript.name, transcript.version)
+        hgvs.transcript = transcript.full_name
         hgvs.gene = transcript.gene.name
 
     # Convert alleles to transcript strand.
@@ -1403,7 +1413,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     alt_len = len(alt)
     if ((mutation_type == 'dup' and ref_len > max_allele_length) or
             (mutation_type != 'dup' and
-             (ref_len > max_allele_length or alt_len > max_allele_length))):
+                (ref_len > max_allele_length or alt_len > max_allele_length))):
         ref = str(ref_len)
         alt = str(alt_len)
 
