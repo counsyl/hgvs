@@ -51,7 +51,9 @@ class Transcript(object):
 
     @property
     def is_coding(self):
-        return hgvs.get_refseq_type(self.name) == 'mRNA'
+        # Coding transcripts have CDS with non-zero length.
+        return (self.cds_position.chrom_stop -
+                self.cds_position.chrom_start > 0)
 
     @property
     def strand(self):
