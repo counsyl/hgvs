@@ -37,6 +37,7 @@ genome = SequenceFileDB('hg19.fa')
 with open('hgvs/data/genes.refGene') as infile:
     transcripts = hgvs.utils.read_transcripts(infile)
 
+
 # Provide a callback for fetching a transcript by its name.
 def get_transcript(name):
     return transcripts.get(name)
