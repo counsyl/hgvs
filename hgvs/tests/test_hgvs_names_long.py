@@ -1,7 +1,7 @@
 from .. import parse_hgvs_name
 from ..utils import read_transcripts
 from ..variants import normalize_variant
-from .genome import MockGenome
+from .genome import MockGenomeTestFile
 
 
 def test_name_to_variant_long():
@@ -10,10 +10,10 @@ def test_name_to_variant_long():
 
     Test a large number of HGVS names from the wild.
     """
-    genome = MockGenome(filename='hgvs/data/test_hgvs.genome')
-
-    #genome = MockGenome(
-    #    db_filename='/seq-data/seq/misc/genomics/genomes/hg19/hg19.fa')
+    genome = MockGenomeTestFile(
+        db_filename='hg19.fa',
+        filename='hgvs/data/test_hgvs.genome',
+        create_data=False)
 
     # Read transcripts.
     with open('hgvs/data/genes.refGene', 'r') as infile:
