@@ -777,7 +777,7 @@ class HGVSName(object):
 
         # Determine using Ensembl type.
         if prefix.startswith('ENST'):
-            self.transcript = prefix.split('.')[0]
+            self.transcript = prefix
             return
 
         # Determine using refseq type.
@@ -1324,7 +1324,11 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     if hgvs.kind == 'c' and not transcript:
         if get_transcript:
             if hgvs.transcript:
-                transcript = get_transcript(hgvs.transcript)
+                if hgvs.transcript.startswith('ENST'):
+                    # ENSEMBL doesn't include version number in gtf files
+                    transcript = get_transcript(hgvs.transcript.split('.')[0])
+                else:
+                    transcript = get_transcript(hgvs.transcript)
             elif hgvs.gene:
                 transcript = get_transcript(hgvs.gene)
         if not transcript:
