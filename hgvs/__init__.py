@@ -777,7 +777,7 @@ class HGVSName(object):
 
         # Determine using Ensembl type.
         if prefix.startswith('ENST'):
-            self.transcript = prefix.split('.')[0]
+            self.transcript = prefix
             return
 
         # Determine using refseq type.
@@ -1409,7 +1409,7 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     alt_len = len(alt)
     if ((mutation_type == 'dup' and ref_len > max_allele_length) or
             (mutation_type != 'dup' and
-                (ref_len > max_allele_length or alt_len > max_allele_length))):
+             (ref_len > max_allele_length or alt_len > max_allele_length))):
         ref = str(ref_len)
         alt = str(alt_len)
 

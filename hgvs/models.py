@@ -4,8 +4,6 @@ Models for representing genomic elements.
 
 from collections import namedtuple
 
-import hgvs
-
 
 class Position(object):
     """A position in the genome."""
