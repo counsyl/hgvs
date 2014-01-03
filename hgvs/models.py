@@ -4,8 +4,6 @@ Models for representing genomic elements.
 
 from collections import namedtuple
 
-import hgvs
-
 
 class Position(object):
     """A position in the genome."""
@@ -44,11 +42,16 @@ class Transcript(object):
 
     @property
     def full_name(self):
-        return '%s.%d' % (self.name, self.version)
+        if self.version is not None:
+            return '%s.%d' % (self.name, self.version)
+        else:
+            return self.name
 
     @property
     def is_coding(self):
-        return hgvs.get_refseq_type(self.name) == 'mRNA'
+        # Coding transcripts have CDS with non-zero length.
+        return (self.cds_position.chrom_stop -
+                self.cds_position.chrom_start > 0)
 
     @property
     def strand(self):
