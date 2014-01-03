@@ -143,6 +143,8 @@ class MockGenome(object):
 class MockGenomeTestFile(MockGenome):
     def __init__(self, lookup=None, filename=None, db_filename=None,
                  default_seq=None, create_data=False):
+        if not create_data:
+            db_filename = None
         super(MockGenomeTestFile, self).__init__(
             lookup=lookup, db_filename=db_filename,
             filename=filename,
