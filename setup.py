@@ -18,8 +18,8 @@ def main():
         sys.exit(1)
 
     setup(
-        name='hgvs',
-        version='0.8',
+        name='pyhgvs',
+        version='0.9',
         description='HGVS name parsing and formatting',
         long_description=description,
         author='Matt Rasmussen',
