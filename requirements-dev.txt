@@ -2,4 +2,4 @@ codequality==0.2-dev
 nose==1.2.1
 pep8==1.4.4
 pyflakes==0.5.0
-pygr==0.8.2
+-e git://github.com/mdshw5/pyfaidx.git#egg=pyfaidx

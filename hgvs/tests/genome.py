@@ -4,6 +4,7 @@ import os
 
 from ..variants import revcomp
 
+
 try:
     from pygr.seqdb import SequenceFileDB
     # Allow pyflakes to ignore redefinition in except clause.
@@ -115,7 +116,7 @@ class MockGenome(object):
 
         filename: a filename string or file stream.
         """
-        if isinstance(filename, basestring):
+        if isinstance(filename, str):
             with open(filename) as infile:
                 return self.read(infile)
         else:
@@ -130,13 +131,13 @@ class MockGenome(object):
 
     def write(self, filename):
         """Write a sequence lookup table to file."""
-        if isinstance(filename, basestring):
+        if isinstance(filename, str):
             with open(filename, 'w') as out:
                 return self.write(out)
         else:
             out = filename
 
-        for (chrom, start, end), seq in self._lookup.iteritems():
+        for (chrom, start, end), seq in self._lookup.items():
             out.write('\t'.join(map(str, [chrom, start, end, seq])) + '\n')
 
 

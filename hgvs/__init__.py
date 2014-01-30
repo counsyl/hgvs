@@ -504,12 +504,12 @@ def get_genomic_sequence(genome, chrom, start, end):
     """
     Return a sequence for the genomic region.
 
-    start, end: 1-based, end-inclusive coordinates of the sequence.
+    start, end: -based, end-exclusive coordinates of the sequence.
     """
     if start > end:
         return ''
     else:
-        return str(genome[str(chrom)][start - 1:end]).upper()
+        return str(genome[str(chrom)][start:end + 1]).upper()
 
 
 def cdna_to_genomic_coord(transcript, coord):
@@ -584,7 +584,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
 
     distances = [exon.distance(genomic_coord)
                  for exon in exons]
-    min_distance_to_exon = min(map(abs, distances))
+    min_distance_to_exon = min(list(map(abs, distances)))
 
     coding_offset = 0
     for exon in exons:
@@ -669,7 +669,6 @@ def get_vcf_allele(hgvs, genome, transcript=None):
     if hgvs.mutation_type in _indel_mutation_types:
         # Left-pad alternate allele.
         alt = ref[0] + alt
-
     return chrom, start, end, ref, alt
 
 
@@ -1241,9 +1240,9 @@ def hgvs_justify_dup(chrom, offset, ref, alt, genome):
     offset -= 1
 
     # Get genomic sequence around the lesion.
-    prev_seq = unicode(
+    prev_seq = str(
         genome[str(chrom)][offset - indel_length:offset]).upper()
-    next_seq = unicode(
+    next_seq = str(
         genome[str(chrom)][offset:offset + indel_length]).upper()
 
     # Convert offset back to 1-index.
@@ -1281,7 +1280,7 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     # Get genomic sequence around the lesion.
     start = max(offset - 100, 0)
     end = offset + 100
-    seq = unicode(genome[str(chrom)][start - 1:end]).upper()
+    seq = str(genome[str(chrom)][start - 1:end]).upper()
     cds_offset = offset - start
 
     # indel -- strip off the ref base to get the actual lesion sequence
