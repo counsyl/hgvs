@@ -31,7 +31,7 @@ import hgvs
 import hgvs.utils
 from pyfaidx import Genome
 
-# Read genome sequence using pygr.
+# Read genome sequence using pyfaidx.
 genome = Genome('/tmp/hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
