@@ -3,9 +3,8 @@ from io import StringIO
 
 import nose
 try:
-    from pygr.seqdb import SequenceFileDB
+    from pyfaidx import Genome as SequenceFileDB
 except:
-    SequenceFileDB
     SequenceFileDB = None
 
 from .. import CDNACoord
@@ -732,4 +731,4 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = read_transcripts(StringIO(_refgene))
+_transcripts = read_transcripts(StringIO(unicode(_refgene)))
