@@ -504,12 +504,12 @@ def get_genomic_sequence(genome, chrom, start, end):
     """
     Return a sequence for the genomic region.
 
-    start, end: -based, end-exclusive coordinates of the sequence.
+    start, end: 1-based, end-inclusive coordinates of the sequence.
     """
     if start > end:
         return ''
     else:
-        return str(genome[str(chrom)][start:end + 1]).upper()
+        return str(genome[str(chrom)][start - 1:end]).upper()
 
 
 def cdna_to_genomic_coord(transcript, coord):
