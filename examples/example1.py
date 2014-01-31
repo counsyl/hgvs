@@ -9,7 +9,8 @@ of this software package. Note, the root directory should contain
 Second, obtain genome sequence in FASTA format, which is required in
 example. Genome sequence can be fetched using the following commands:
 
-  wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
+  cd /tmp
+  curl -O http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
   tar zxvf chromFa.tar.gz
   cat chr*.fa > hg19.fa
   rm chr*.fa chromFa.tar.gz

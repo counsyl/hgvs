@@ -1,35 +1,32 @@
-#!/usr/bin/env python
-
-from setuptools import setup
-from pip.req import parse_requirements
+from setuptools import setup, Extension
+import distutils.core
 import sys
+import os
 
 description = ("This library provides a simple to use Python API for parsing, "
                "formatting, and normalizing variant names specified in the "
                "standard recommended by the Human Genome Variation Society "
-               "(HGVS).")
+               "(HGVS). This is a fork of the Counsyl package, updated to use 
+               "pyfaidx for indexed fasta access.")
 
-
-def main():
-    python_version = sys.version_info
-    if python_version < (2, 6):
-        print ("This library requires Python version >=2.6, "
-               "You have version %d.%d" % python_version[:2])
-        sys.exit(1)
-
-    setup(
+setup(
         name='hgvs',
         version='0.8',
         description='HGVS name parsing and formatting',
         long_description=description,
-        author='Matt Rasmussen',
-        author_email='rasmus@counsyl.com',
+        author='Matthew Shirley',
+        license = 'MIT',
+        author_email='mdshw5@gmail.com',
         packages=['hgvs', 'hgvs.tests'],
-        scripts=[],
-        install_requires=['pip>=1.2'],
-        tests_require=[str(line.req) for line in
-                       parse_requirements('requirements-dev.txt')],
-    )
-
-if __name__ == '__main__':
-    main()
+        install_requires=['pyfaidx'],
+        classifiers = [
+                "Development Status :: 3 - Alpha",
+                "License :: OSI Approved :: MIT License",
+                "Environment :: Console",
+                "Intended Audience :: Science/Research",
+                "Natural Language :: English",
+                "Operating System :: Unix",
+                "Programming Language :: Python :: 3.3",
+                "Topic :: Scientific/Engineering :: Bio-Informatics"
+        ]
+)
