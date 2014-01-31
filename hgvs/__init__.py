@@ -1332,7 +1332,7 @@ def hgvs_normalize_variant(chrom, offset, ref, alt, genome, transcript=None):
 
 def parse_hgvs_name(hgvs_name, genome, transcript=None,
                     get_transcript=lambda name: None,
-                    flank_length=30, normalize=True):
+                    flank_length=30, normalize=True, lazy=False):
     """
     Parse an HGVS name into (chrom, start, end, ref, alt)
 
@@ -1340,11 +1340,16 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     genome: pygr compatible genome object.
     transcript: Transcript corresponding to HGVS name.
     normalize: If True, normalize allele according to VCF standard.
+    lazy: If True, discard version information from incoming transcript/gene.
     """
     hgvs = HGVSName(hgvs_name)
 
     # Determine transcript.
     if hgvs.kind == 'c' and not transcript:
+        if '.' in hgvs.transcript and lazy:
+            hgvs.transcript, version = hgvs.transcript.split('.')
+        elif '.' in hgvs.gene and lazy:
+            hgvs.gene, version = hgvs.gene.split('.')
         if get_transcript:
             if hgvs.transcript:
                 transcript = get_transcript(hgvs.transcript)
