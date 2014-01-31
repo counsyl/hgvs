@@ -95,10 +95,10 @@ provided by `hgvs`.
 ```python
 import hgvs
 import hgvs.utils
-from pygr.seqdb import SequenceFileDB
+from pyfaidx import Genome
 
-# Read genome sequence using pygr.
-genome = SequenceFileDB('hg19.fa')
+# Read genome sequence using pyfaidx.
+genome = Genome('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('hgvs/data/genes.refGene') as infile:
@@ -160,11 +160,11 @@ python setup.py nosetests
 
 ## Requirements
 
-This library requires at least Python 2.6, but otherwise has no
+This library requires at least Python 3.3, but otherwise has no
 external dependencies.
 
-The library does assume that genome sequence is available through a `pygr`
-compatible `SequenceFileDB` object. For an example of writing a wrapper for
+The library does assume that genome sequence is available through a `pyfaidx`
+compatible `Genome` object. For an example of writing a wrapper for
 a different genome sequence back-end, see
 [hgvs.tests.genome.MockGenome](hgvs/tests/genome.py).
 
