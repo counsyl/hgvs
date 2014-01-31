@@ -6,7 +6,7 @@ import os
 description = ("This library provides a simple to use Python API for parsing, "
                "formatting, and normalizing variant names specified in the "
                "standard recommended by the Human Genome Variation Society "
-               "(HGVS). This is a fork of the Counsyl package, updated to use 
+               "(HGVS). This is a fork of the Counsyl package, updated to use "
                "pyfaidx for indexed fasta access.")
 
 setup(
