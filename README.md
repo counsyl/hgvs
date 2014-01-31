@@ -88,7 +88,7 @@ needed: the genome sequence (needed for normalization), and the
 transcript model or a callback for fetching the transcript model
 (needed for transcript coordinate calculations).  This library makes
 as few assumptions as possible about how this external data is stored.
-In this example, the genome sequence is read using the `pygr` library
+In this example, the genome sequence is read using the `pyfaidx` library
 and transcripts are read from a RefSeqGenes flat-file using methods
 provided by `hgvs`.
 
