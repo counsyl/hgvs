@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mdshw5/hgvs.png?branch=master)](https://travis-ci.org/mdshw5/hgvs)
+
 HGVS variant name parsing and generation
 ========================================
 
