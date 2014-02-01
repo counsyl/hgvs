@@ -137,7 +137,7 @@ def test_name_to_variant_refseqs():
     if not SequenceFileDB:
         print('skip test_name_to_variant_refseqs')
         return
-    genome = SequenceFileDB('hgvs/tests/data/test_refseqs.fa')
+    genome = SequenceFileDB('hgvs/tests/data/test_refseqs_wrapped.fa')
 
     for hgvs_name, variant, canonical in _name_variants:
         if 'NM_' not in hgvs_name:
@@ -731,4 +731,4 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = read_transcripts(StringIO(unicode(_refgene)))
+_transcripts = read_transcripts(StringIO(str(_refgene)))
