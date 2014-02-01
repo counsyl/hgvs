@@ -242,10 +242,12 @@ class ChromosomeSubset(object):
         self.name = name
         self.genome = genome
 
-    def __getslice__(self, start, end, step=1):
+    def __getitem__(self, key):
         """Return sequence from region [start, end)
 
         Coordinates are 0-based, end-exclusive."""
+        assert isinstance(key, slice)
+        start, end = (key.start, key.stop)
         start -= self.genome.start
         end -= self.genome.start
         return self.genome.genome[self.genome.seqid][start:end]
@@ -1199,7 +1201,7 @@ class HGVSName(object):
         # Represent duplications are inserts.
         if self.mutation_type == "dup":
             alleles[0] = ""
-            alleles[1] = alleles[1][:len(alleles[1]) / 2]
+            alleles[1] = alleles[1][:len(alleles[1]) // 2]
 
         if is_forward_strand:
             return alleles

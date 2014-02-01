@@ -35,12 +35,16 @@ class MockChromosome(object):
     def __init__(self, name, genome=None):
         self.name = name
         self.genome = genome
+        
 
-    def __getslice__(self, start, end, step=1):
+    def __getitem__(self, n):
         """Return sequence from region [start, end)
 
         Coordinates are 0-based, end-exclusive."""
-        return self.genome.get_seq(self.name, start, end)
+        if isinstance(n, slice):
+            return self.genome.get_seq(self.name, n.start, n.stop)
+        elif isinstance(n, key):
+            return self.genome.get_seq(self.name, n.start, n.start)
 
     def __repr__(self):
         return 'MockChromosome("%s")' % (self.name)
