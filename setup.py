@@ -25,6 +25,7 @@ def main():
         author='Matt Rasmussen',
         author_email='rasmus@counsyl.com',
         packages=['hgvs', 'hgvs.tests'],
+        include_package_data=True,
         package_data={
             '': ['requirements-dev.txt'],
         },
