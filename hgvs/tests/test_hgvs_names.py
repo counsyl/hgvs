@@ -100,12 +100,13 @@ def test_name_to_variant():
         filename='hgvs/tests/data/test_name_to_variant.genome',
         create_data=False)
 
-    for hgvs_name, variant, canonical in _name_variants:
-        hgvs_variant = parse_hgvs_name(hgvs_name, genome,
-                                       get_transcript=get_transcript)
-        nose.tools.assert_equal(
-            hgvs_variant, variant,
-            repr([hgvs_name, variant, hgvs_variant]))
+    for hgvs_name, variant, name_canonical, var_canonical in _name_variants:
+        if var_canonical:
+            hgvs_variant = parse_hgvs_name(hgvs_name, genome,
+                                           get_transcript=get_transcript)
+            nose.tools.assert_equal(
+                hgvs_variant, variant,
+                repr([hgvs_name, variant, hgvs_variant]))
 
 
 def test_variant_to_name():
@@ -117,8 +118,9 @@ def test_variant_to_name():
         filename='hgvs/tests/data/test_variant_to_name.genome',
         create_data=False)
 
-    for expected_hgvs_name, variant, canonical in _name_variants:
-        if canonical:
+    for (expected_hgvs_name, variant,
+         name_canonical, var_canonical) in _name_variants:
+        if name_canonical:
             transcript_name = HGVSName(expected_hgvs_name).transcript
             transcript = get_transcript(transcript_name)
             assert transcript, transcript_name
@@ -140,8 +142,8 @@ def test_name_to_variant_refseqs():
         return
     genome = SequenceFileDB('hgvs/tests/data/test_refseqs.fa')
 
-    for hgvs_name, variant, canonical in _name_variants:
-        if 'NM_' not in hgvs_name:
+    for hgvs_name, variant, name_canonical, var_canonical in _name_variants:
+        if not var_canonical or 'NM_' not in hgvs_name:
             # Only test transcript HGVS names.
             continue
         hgvs_variant = parse_hgvs_name(hgvs_name, genome,
@@ -615,103 +617,114 @@ _parse_names = [
 
 
 # Example HGVS names and variants.
-# format: (name, variant, is_canonical)
+# format: (name, variant, name_canonical, var_canonical)
 _name_variants = [
     # Simple SNPs.
-    ('NM_000352.3:c.215A>G', ('chr11', 17496508, 'T', 'C'), True),
-    ('NM_000352.3:c.72C>A', ('chr11', 17498252, 'G', 'T'),  True),
-    ('NM_000352.3:c.3885C>G', ('chr11', 17418843, 'G', 'C'), True),
+    ('NM_000352.3:c.215A>G', ('chr11', 17496508, 'T', 'C'), True, True),
+    ('NM_000352.3:c.72C>A', ('chr11', 17498252, 'G', 'T'),  True, True),
+    ('NM_000352.3:c.3885C>G', ('chr11', 17418843, 'G', 'C'), True, True),
 
     # SNPs within introns.
-    ('NM_000352.3:c.1630+1G>A', ('chr11', 17464266, 'C', 'T'), True),
-    ('NM_000352.3:c.1630+1G>C', ('chr11', 17464266, 'C', 'G'), True),
-    ('NM_000352.3:c.1630+1G>T', ('chr11', 17464266, 'C', 'A'), True),
-    ('NM_000352.3:c.1672-20A>G', ('chr11', 17452526, 'T', 'C'), True),
-    ('NM_000352.3:c.1672-74G>A', ('chr11', 17452580, 'C', 'T'), True),
-    ('NM_000352.3:c.1923+5G>T', ('chr11', 17450107, 'C', 'A'), True),
-    ('NM_000352.3:c.2041-21G>A', ('chr11', 17449510, 'C', 'T'), True),
-    ('NM_000352.3:c.2116+3A>G', ('chr11', 17449411, 'T', 'C'), True),
-    ('NM_000352.3:c.2116+1G>T', ('chr11', 17449413, 'C', 'A'), True),
-    ('NM_000352.3:c.2116+2T>C', ('chr11', 17449412, 'A', 'G'), True),
+    ('NM_000352.3:c.1630+1G>A', ('chr11', 17464266, 'C', 'T'), True, True),
+    ('NM_000352.3:c.1630+1G>C', ('chr11', 17464266, 'C', 'G'), True, True),
+    ('NM_000352.3:c.1630+1G>T', ('chr11', 17464266, 'C', 'A'), True, True),
+    ('NM_000352.3:c.1672-20A>G', ('chr11', 17452526, 'T', 'C'), True, True),
+    ('NM_000352.3:c.1672-74G>A', ('chr11', 17452580, 'C', 'T'), True, True),
+    ('NM_000352.3:c.1923+5G>T', ('chr11', 17450107, 'C', 'A'), True, True),
+    ('NM_000352.3:c.2041-21G>A', ('chr11', 17449510, 'C', 'T'), True, True),
+    ('NM_000352.3:c.2116+3A>G', ('chr11', 17449411, 'T', 'C'), True, True),
+    ('NM_000352.3:c.2116+1G>T', ('chr11', 17449413, 'C', 'A'), True, True),
+    ('NM_000352.3:c.2116+2T>C', ('chr11', 17449412, 'A', 'G'), True, True),
 
     # Indels.
     ('NM_000018.3:c.922_930delGCAGAGGTGinsTCAAAGCAC',
-     ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False),
+     ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False, True),
     ('NM_000018.3:c.1077_1077+1delGGinsCAC',
-     ('chr17', 7126183, 'CGG', 'CCAC'), True),
+     ('chr17', 7126183, 'CGG', 'CCAC'), True, True),
     ('NM_000019.3:c.163_167delTTTTTinsAA',
-     ('chr11', 108004588, 'TTTTTT', 'TAA'), False),
+     ('chr11', 108004588, 'TTTTTT', 'TAA'), False, True),
     ('NM_000022.2:c.781-3_781delCAGAinsTGGAAGAGCAGATCTGG',
-     ('chr20', 43251292, 'ATCTG', 'ACCAGATCTGCTCTTCCA'), False),
+     ('chr20', 43251292, 'ATCTG', 'ACCAGATCTGCTCTTCCA'), False, True),
     ('NM_000023.2:c.585-2_585-1delAGinsT',
-     ('chr17', 48246450, 'CAG', 'CT'), True),
+     ('chr17', 48246450, 'CAG', 'CT'), True, True),
     ('NM_000030.2:c.2_3delTGinsAT',
-     ('chr2', 241808283, 'ATG', 'AAT'), True),
+     ('chr2', 241808283, 'ATG', 'AAT'), True, True),
     ('NM_000030.2:c.2_3del2ins2',
-     ('chr2', 241808283, 'ATG', 'ANN'), False),
+     ('chr2', 241808283, 'ATG', 'ANN'), False, True),
     ('NM_007294.3:c.4185+2_4185+22del21insA',
-     ('chr17', 41242938, 'GCACACACACACACGCTTTTTA', 'GT'), False),
+     ('chr17', 41242938, 'GCACACACACACACGCTTTTTA', 'GT'), False, True),
 
     # Single letter del and insert.
     ('NM_000016.4:c.945+4delAinsGC',
-     ('chr1', 76216234, u'AA', 'AGC'), True),
+     ('chr1', 76216234, u'AA', 'AGC'), True, True),
     ('NM_000030.2:c.308delGinsTCCTGGTTGA',
-     ('chr2', 241808728, u'GG', 'GTCCTGGTTGA'), False),
+     ('chr2', 241808728, u'GG', 'GTCCTGGTTGA'), False, True),
     ('NM_000038.5:c.1617delCinsGAA',
-     ('chr5', 112163693, u'AC', 'AGAA'), True),
+     ('chr5', 112163693, u'AC', 'AGAA'), True, True),
     ('NM_000038.5:c.4256delGinsCC',
-     ('chr5', 112175546, u'AG', 'ACC'), True),
+     ('chr5', 112175546, u'AG', 'ACC'), True, True),
     ('NM_000038.5:c.4256delGins5',
-     ('chr5', 112175546, u'AG', 'ANNNNN'), False),
+     ('chr5', 112175546, u'AG', 'ANNNNN'), False, True),
 
     # Delete region.
     ('NM_000016.4:c.291_296delTCTTGG',
-     ('chr1', 76199214, u'AGGTCTT', 'A'),  False),
+     ('chr1', 76199214, u'AGGTCTT', 'A'),  False, True),
     ('NM_000016.4:c.306_307insG',
-     ('chr1', 76199232, u'T', 'TG'), False),
+     ('chr1', 76199232, u'T', 'TG'), False, True),
     ('NM_000016.4:c.343_348delGGATGT',
-     ('chr1', 76199267, u'ATGGATG', 'A'), False),
-    ('NM_000016.4:c.430_432delAAG', ('chr1', 76200511, u'AAAG', 'A'), True),
-    ('NM_000016.4:c.430_432del3', ('chr1', 76200511, u'AAAG', 'A'), False),
+     ('chr1', 76199267, u'ATGGATG', 'A'), False, True),
+    ('NM_000016.4:c.430_432delAAG', ('chr1', 76200511, u'AAAG', 'A'),
+     True, True),
+    ('NM_000016.4:c.430_432del3', ('chr1', 76200511, u'AAAG', 'A'),
+     False, True),
 
     # Single letter insert, delete, duplication.
-    ('NM_000016.4:c.203delA', ('chr1', 76198412, 'GA', 'G'), True),
-    ('NM_000016.4:c.244dupT', ('chr1', 76198564, 'C', 'CT'), True),
-    ('NM_000016.4:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True),
-    ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True),
-    ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True),
-    ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True),
-    ('NM_000016.4:c.307insG', ('chr1', 76199232, 'T', 'TG'), True),
+    ('NM_000016.4:c.203delA', ('chr1', 76198412, 'GA', 'G'), True, True),
+    ('NM_000016.4:c.244dupT', ('chr1', 76198564, 'C', 'CT'), True, True),
+    ('NM_000016.4:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True, True),
+    ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True, True),
+    ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True, True),
+    ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True, True),
+    ('NM_000016.4:c.307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
 
     # Alignment tests for HGVS 3' and VCF left-alignment.
-    ('NM_000492.3:c.935_937delTCT', ('chr7', 117180210, 'CCTT', 'C'), True),
-    ('NM_000492.3:c.442delA', ('chr7', 117171120, 'CA', 'C'), True),
-    ('NM_000492.3:c.805_806delAT', ('chr7', 117176660, 'AAT', 'A'), True),
-    ('NM_000492.3:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'), True),
-    ('NM_000492.3:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True),
+    ('NM_000492.3:c.935_937delTCT', ('chr7', 117180210, 'CCTT', 'C'),
+     True, True),
+    ('NM_000492.3:c.442delA', ('chr7', 117171120, 'CA', 'C'), True, True),
+    ('NM_000492.3:c.805_806delAT', ('chr7', 117176660, 'AAT', 'A'),
+     True, True),
+    ('NM_000492.3:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'),
+     True, True),
+    ('NM_000492.3:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True, True),
 
     # Transcript prefix.
-    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('NM_007294.3(BRCA1):c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
-    ('ENST00000357654:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False),
+    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False, True),
+    ('NM_007294.3:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False, True),
+    ('NM_007294.3(BRCA1):c.2207A>C', ('chr17', 41245341, 'T', 'G'),
+     False, True),
+    ('ENST00000357654:c.2207A>C', ('chr17', 41245341, 'T', 'G'), False, True),
 
     # After stop codon.
-    ('NM_000492.3:c.*3A>C', ('chr7', 117307165, 'A', 'C'), True),
+    ('NM_000492.3:c.*3A>C', ('chr7', 117307165, 'A', 'C'), True, True),
 
     # Genomic simple SNPs.
-    ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False),
+    ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False, True),
 
     # Genomic indels.
     ('chr17:g.7126029_7126037delGCAGAGGTGinsTCAAAGCAC',
-     ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False),
+     ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False, True),
 
     # Genomic single letter del and insert.
-    ('chr1:g.76216235delAinsGC', ('chr1', 76216234, u'AA', 'AGC'), False),
+    ('chr1:g.76216235delAinsGC', ('chr1', 76216234, u'AA', 'AGC'),
+     False, True),
 
     # Genomic delete region.
     ('chr1:g.76199215_76199220delGGTCTT',
-     ('chr1', 76199214, u'AGGTCTT', 'A'), False),
+     ('chr1', 76199214, u'AGGTCTT', 'A'), False, True),
+
+    # Non-canonical.
+    ('NM_000492.3:c.1210-7_1210-6dupTT',
+     ('chr7', 117188682, 'GTT', 'GTTTT'), True, False),
 ]
 
 

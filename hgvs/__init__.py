@@ -1383,6 +1383,8 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     max_allele_length: If allele is greater than this use allele length.
     """
     # Convert VCF-style variant to HGVS-style.
+    chrom, offset, ref, [alt] = normalize_variant(
+        chrom, offset, ref, [alt], genome).variant
     chrom, offset, ref, alt, mutation_type = hgvs_normalize_variant(
         chrom, offset, ref, alt, genome, transcript)
 
