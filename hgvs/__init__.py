@@ -15,7 +15,6 @@ HGVS = ALLELE
 
 PREFIX_NAME = TRANSCRIPT
             | TRANSCRIPT '(' GENE ')'
-            | GENE '{' TRANSCRIPT '}' # Counsyl style
 
 TRANSCRIPT = TRANSCRIPT_NAME
            | TRANSCRIPT_NAME '.' TRANSCRIPT_VERSION
@@ -992,22 +991,20 @@ class HGVSName(object):
         else:
             raise NotImplementedError("not implemented: '%s'" % self.kind)
 
-        prefix = self.format_prefix(
-            use_gene=use_gene, use_counsyl=use_counsyl) if use_prefix else ''
+        prefix = self.format_prefix(use_gene=use_gene) if use_prefix else ''
 
         if prefix:
             return prefix + ':' + allele
         else:
             return allele
 
-    def format_prefix(self, use_gene=True, use_counsyl=False):
+    def format_prefix(self, use_gene=True):
         """
         Generate HGVS trancript/gene prefix.
 
         Some examples of full hgvs names with transcript include:
           NM_007294.3:c.2207A>C
           NM_007294.3(BRCA1):c.2207A>C
-          BRCA1{NM_007294.3}:c.2207A>C
         """
 
         if self.kind == 'g':
@@ -1016,10 +1013,7 @@ class HGVSName(object):
 
         if self.transcript:
             if use_gene and self.gene:
-                if use_counsyl:
-                    return '%s{%s}' % (self.gene, self.transcript)
-                else:
-                    return '%s(%s)' % (self.transcript, self.gene)
+                return '%s(%s)' % (self.transcript, self.gene)
             else:
                 return self.transcript
         else:
