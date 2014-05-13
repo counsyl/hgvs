@@ -1364,7 +1364,7 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
 
 
 def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
-                         max_allele_length=4):
+                         max_allele_length=4, use_counsyl=False):
     """
     Populate a HGVSName from a genomic coordinate.
 
@@ -1394,9 +1394,11 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     else:
         # Use cDNA coordinates.
         hgvs.kind = 'c'
-        if (mutation_type == '>' or
-                mutation_type == 'ins' and len(alt) == 1 or
-                mutation_type in ('del', 'delins', 'dup') and len(ref) == 1):
+        is_single_base_indel = (
+            (mutation_type == 'ins' and len(alt) == 1) or
+            (mutation_type in ('del', 'delins', 'dup') and len(ref) == 1))
+
+        if mutation_type == '>' or (use_counsyl and is_single_base_indel):
             # Use a single coordinate.
             hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset)
             hgvs.cdna_end = hgvs.cdna_start
@@ -1458,6 +1460,7 @@ def format_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     max_allele_length: If allele is greater than this use allele length.
     """
     hgvs = variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
-                                max_allele_length=max_allele_length)
+                                max_allele_length=max_allele_length,
+                                use_counsyl=use_counsyl)
     return hgvs.format(use_prefix=use_prefix, use_gene=use_gene,
                        use_counsyl=use_counsyl)
