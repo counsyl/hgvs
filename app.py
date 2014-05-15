@@ -10,7 +10,7 @@ from flask import Flask,jsonify, request
 
 application = app = Flask(__name__)
 
-# genome = SequenceFileDB('/local/resources/hg18/karyotypic/hg18.fa')
+
 genome = SequenceFileDB('/Users/afrieden/test/hg/hg18.fa')
 
 
@@ -47,8 +47,8 @@ def getGeneFromPosition(_position):
 			closestGene = row[0]
 	return closestGene
 
-#infile = open('/sandbox/afrieden/Projects/hgvs/hgvs/data/gsg-transcript-03-06-2014.txt')
-with open('/Users/afrieden/Projects/hgvs/hgvs/data/gsg-transcript-03-06-2014.txt') as infile:
+
+with open('./hgvs/data/gsg-transcript-03-06-2014.txt') as infile:
 	transcripts = hgvs.utils.read_transcripts(infile)
 #transcripts = read_transcripts(infile)
 
