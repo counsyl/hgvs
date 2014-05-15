@@ -163,8 +163,30 @@ python setup.py nosetests
 This library requires at least Python 2.6, but otherwise has no
 external dependencies.
 
+
 The library does assume that genome sequence is available through a `pygr`
 compatible `SequenceFileDB` object. For an example of writing a wrapper for
 a different genome sequence back-end, see
 [hgvs.tests.genome.MockGenome](hgvs/tests/genome.py).
+
+## Flask Web Service
+hgvs api for counsyl hgvs tool
+
+To run:
+
+    $git clone https://github.com/alexfrieden/hgvs.git -b insert-1bp
+    $cd hgvs-api
+    $python setup.py install
+    $cd hgvs/hgvs-api/
+    $sudo easy_install flask
+    ...
+    $sudo easy_install pygr
+    ...
+    $python app.py
+     * Running on http://127.0.0.1:5000/
+     * Restarting with reloader
+
+
+Now go and try it out!  Go to http://127.0.0.1:5000/ to see examples of how to go from vcf to cdna and cdna to vcf
+
 
