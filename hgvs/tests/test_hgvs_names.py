@@ -133,6 +133,30 @@ def test_variant_to_name():
                 repr([hgvs_name, expected_hgvs_name, variant]))
 
 
+def test_variant_to_name_counsyl():
+    """
+    Convert variant coordinates to HGVS names with counsyl-specific style.
+    """
+    genome = MockGenomeTestFile(
+        db_filename='hg19.fa',
+        filename='hgvs/tests/data/test_variant_to_name.genome',
+        create_data=False)
+
+    for (expected_hgvs_name, variant,
+         name_canonical, var_canonical) in _name_variants_counsyl:
+        if name_canonical:
+            transcript_name = HGVSName(expected_hgvs_name).transcript
+            transcript = get_transcript(transcript_name)
+            assert transcript, transcript_name
+            chrom, offset, ref, alt = variant
+            hgvs_name = format_hgvs_name(
+                chrom, offset, ref, alt, genome, transcript,
+                use_gene=False, use_counsyl=True)
+            nose.tools.assert_equal(
+                hgvs_name, expected_hgvs_name,
+                repr([hgvs_name, expected_hgvs_name, variant]))
+
+
 def test_name_to_variant_refseqs():
     """
     Convert HGVS names to variant coordinates using refseqs directly.
@@ -685,7 +709,7 @@ _name_variants = [
     ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True, True),
     ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True, True),
     ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True, True),
-    ('NM_000016.4:c.307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
+    ('NM_000016.4:c.306_307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
 
     # Alignment tests for HGVS 3' and VCF left-alignment.
     ('NM_000492.3:c.935_937delTCT', ('chr7', 117180210, 'CCTT', 'C'),
@@ -725,6 +749,11 @@ _name_variants = [
     # Non-canonical.
     ('NM_000492.3:c.1210-7_1210-6dupTT',
      ('chr7', 117188682, 'GTT', 'GTTTT'), True, False),
+]
+
+
+_name_variants_counsyl = [
+    ('NM_000016.4:c.307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
 ]
 
 
