@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+import logging
+import optparse
+import sys
+
+import hgvs
+from hgvs.variants import normalize_variant
+from hgvs.utils import read_transcripts
+from hgvs import parse_hgvs_name
+
+import pygr.logger
+from pygr.seqdb import SequenceFileDB
+
+# Disable pygr logging to stdout
+pygr.logger.get_logger().setLevel('ERROR')
+
+# Setup logging.
+logger = logging.getLogger("clinvar")
+formatter = logging.Formatter(
+    '%(filename)s:%(lineno)s - %(name)s - %(levelname)s - %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Command line options.
+options = optparse.OptionParser()
+options.add_option('-f', '--fasta')
+options.add_option('-t', '--trans')
+
+
+#=============================================================================
+# Allele determination.
+
+def get_sequence(genome, chrom, start, end):
+    """Return a sequence for the genomic region.
+
+    Coordinates are 0-based, end-exclusive.
+    """
+    if start >= end:
+        return ''
+    else:
+        return str(genome[str(chrom)][start:end]).upper()
+
+
+def get_transcript(name):
+    """Get a transcript using its name or a gene name"""
+    transcript = transcripts.get(name)
+    if not transcript:
+        transcript = transcripts.get(gene2transcript.get(name))
+    return transcript
+
+
+def determine_allele(genome, hgvs_name):
+    """Determine the allele from a hgvs name."""
+
+    messages = []
+
+    # Parse HGVS cDNA name.
+    try:
+        chrom, start, ref, alt = parse_hgvs_name(
+            hgvs_name, genome, get_transcript=get_transcript)
+    except (NotImplementedError, AssertionError, KeyError, ValueError,
+            hgvs.InvalidHGVSName) as error:
+        messages.append(str(error))
+        return None, messages
+
+    # Validate reference allele.
+    genome_ref = get_sequence(
+        genome, chrom, start - 1, start - 1 + len(ref))
+    if ref != genome_ref:
+        messages.append(
+            'Reference allele does not match genome. Ignoring allele: '
+            '%s != %s' % (ref, genome_ref))
+
+    # Normalize variant.
+    try:
+        chrom, start, ref, alts = normalize_variant(
+            chrom, start, ref, [alt], genome).variant
+    except:
+        messages.append('Variant normalization failed')
+
+    return (chrom, start, ref, alts[0]), messages
+
+#=============================================================================
+# Main.
+
+if __name__ == '__main__':
+    conf, args = options.parse_args()
+
+    # Read genome and transcripts.
+    genome = SequenceFileDB(conf.fasta)
+    with open(conf.trans) as infile:
+        transcripts = read_transcripts(infile)
+
+    gene2transcript = {transcript.gene.name: transcript
+                       for transcript in transcripts.itervalues()}
+
+    if len(args) == 0:
+        args = (line.rstrip() for line in sys.stdin)
+
+    headers = ['name', 'chrom', 'start', 'ref', 'alt', 'messages']
+    print '\t'.join(map(str, headers))
+
+    for allele_name in args:
+        allele, messages = determine_allele(genome, allele_name)
+        message = '|'.join(messages)
+        if allele:
+            chrom, start, ref, alt = allele
+            row = [allele_name, chrom, start, ref, alt, message]
+        else:
+            row = [allele_name, '', '', '', '', message]
+        print '\t'.join(map(str, row))
