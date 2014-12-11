@@ -20,6 +20,9 @@ def get_sequence(genome, chrom, start, end, is_forward_strand=True):
 
     Coordinates are 0-based, end-exclusive.
     """
+    # Prevent fetching negative coordinates.
+    start = max(start, 0)
+
     if start >= end:
         return ''
     else:
@@ -80,7 +83,7 @@ def justify_genomic_indel(genome, chrom, start, end, indel, justify,
     start, end: 0-based, end-exclusive coordinates of 'indel'.
     """
     while True:
-        seq_start = start - flank_length
+        seq_start = max(start - flank_length, 0)
         indel_len = len(indel)
         fetch_len = indel_len + 2 * flank_length
         seq = get_sequence(
@@ -261,7 +264,7 @@ class NormalizedVariant(object):
             return
 
         # Pad sequences with one 5-prime base before the mutation event.
-        empty_seq = any(1 for allele in self.alleles if not allele)
+        empty_seq = any(not allele for allele in self.alleles)
         uniq_starts = set(allele[0] for allele in self.alleles if allele)
         if empty_seq or len(uniq_starts) > 1:
             # Fetch more 5p flanking sequence if needed.
@@ -271,11 +274,17 @@ class NormalizedVariant(object):
                     self.genome, self.position.chrom, start - 5, start)
 
             self.log.append('1bp pad')
-            for i, allele in enumerate(self.alleles):
-                self.alleles[i] = self.seq_5p[-1] + self.alleles[i]
+            if self.seq_5p:
+                for i, allele in enumerate(self.alleles):
+                    self.alleles[i] = self.seq_5p[-1] + self.alleles[i]
 
-            self.seq_5p = self.seq_5p[:-1]
-            self.position.chrom_start -= 1
+                self.seq_5p = self.seq_5p[:-1]
+                self.position.chrom_start -= 1
+            else:
+                # According to VCF standard, if there is no 5prime sequence,
+                # use 3prime sequence instead.
+                for i, allele in enumerate(self.alleles):
+                    self.alleles[i] = self.alleles[i] + self.seq_3p[0]
 
         if len(set(a[0] for a in self.alleles)) != 1:
             raise AssertionError(
