@@ -19,12 +19,12 @@ def main():
 
     setup(
         name='pyhgvs',
-        version='0.9.1',
+        version='0.9.2',
         description='HGVS name parsing and formatting',
         long_description=description,
         author='Matt Rasmussen',
         author_email='rasmus@counsyl.com',
-        packages=['hgvs', 'hgvs.tests'],
+        packages=['pyhgvs', 'pyhgvs.tests'],
         include_package_data=True,
         package_data={
             '': ['requirements-dev.txt'],

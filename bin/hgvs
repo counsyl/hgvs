@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
+import argparse
 import logging
-import optparse
 import sys
 
-import hgvs
-from hgvs.variants import normalize_variant
-from hgvs.utils import read_transcripts
-from hgvs import parse_hgvs_name
+import pyhgvs
+from pyhgvs import parse_hgvs_name
+from pyhgvs.variants import normalize_variant
+from pyhgvs.utils import read_transcripts
 
 import pygr.logger
 from pygr.seqdb import SequenceFileDB
@@ -24,9 +24,10 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Command line options.
-options = optparse.OptionParser()
-options.add_option('-f', '--fasta')
-options.add_option('-t', '--trans')
+options = argparse.ArgumentParser()
+options.add_argument('-f', '--fasta', required=True)
+options.add_argument('-t', '--trans', required=True)
+options.add_argument('hgvs_name', nargs='*')
 
 
 #=============================================================================
@@ -61,7 +62,7 @@ def determine_allele(genome, hgvs_name):
         chrom, start, ref, alt = parse_hgvs_name(
             hgvs_name, genome, get_transcript=get_transcript)
     except (NotImplementedError, AssertionError, KeyError, ValueError,
-            hgvs.InvalidHGVSName) as error:
+            pyhgvs.InvalidHGVSName) as error:
         messages.append(str(error))
         return None, messages
 
@@ -86,23 +87,25 @@ def determine_allele(genome, hgvs_name):
 # Main.
 
 if __name__ == '__main__':
-    conf, args = options.parse_args()
+    args = options.parse_args()
 
     # Read genome and transcripts.
-    genome = SequenceFileDB(conf.fasta)
-    with open(conf.trans) as infile:
+    genome = SequenceFileDB(args.fasta)
+    with open(args.trans) as infile:
         transcripts = read_transcripts(infile)
 
     gene2transcript = {transcript.gene.name: transcript
                        for transcript in transcripts.itervalues()}
 
-    if len(args) == 0:
-        args = (line.rstrip() for line in sys.stdin)
+    if args.hgvs_name:
+        hgvs_names = args.hgvs_name
+    else:
+        hgvs_names = (line.rstrip() for line in sys.stdin)
 
     headers = ['name', 'chrom', 'start', 'ref', 'alt', 'messages']
     print '\t'.join(map(str, headers))
 
-    for allele_name in args:
+    for allele_name in hgvs_names:
         allele, messages = determine_allele(genome, allele_name)
         message = '|'.join(messages)
         if allele:
