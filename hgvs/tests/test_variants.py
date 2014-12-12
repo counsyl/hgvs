@@ -60,3 +60,13 @@ class TestVariant(TestCase):
                 norm_variant, true_variant,
                 'Variant failed to normalize %s: %s != %s' %
                 (repr(variant), repr(norm_variant), repr(true_variant)))
+
+    def test_position(self):
+        """
+        Test that final position is 1-index and end-inclusive.
+        """
+        genome = MockGenome(_genome_seq)
+        normed_allele = normalize_variant(
+            'chr11', 17417434, 'A', ['T'], genome)
+        self.assertEqual(normed_allele.position.chrom_start, 17417434)
+        self.assertEqual(normed_allele.position.chrom_stop, 17417434)

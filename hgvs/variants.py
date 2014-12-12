@@ -122,7 +122,7 @@ def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
     genome: pygr-compatiable genome object.
     """
     start = offset - 1
-    end = offset + len(ref_sequence)
+    end = start + len(ref_sequence)
     position = Position(
         chrom=chrom,
         chrom_start=start,
