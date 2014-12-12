@@ -287,9 +287,8 @@ class NormalizedVariant(object):
                 for i, allele in enumerate(self.alleles):
                     self.alleles[i] = self.alleles[i] + self.seq_3p[0]
 
-                self.position.chrom_stop += 1
                 self.seq_3p = self.seq_3p[1:]
-
+                self.position.chrom_stop += 1
 
         if len(set(a[0] for a in self.alleles)) != 1:
             raise AssertionError(
