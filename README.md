@@ -71,7 +71,7 @@ are equivalent (e.g. it doesn't matter which `AT` in a run of
 specify such indels by using the most left-aligned genomic coordinate.
 Therefore, compliant variant callers that output VCF will have applied
 this normalization.  The HGVS standard also specifies a normalization
-for such indels. However, it states that indels should use the most 5'
+for such indels. However, it states that indels should use the most 3'
 position in a transcript.  For genes on the positive strand, this is
 the opposite direction specified by VCF.  This library properly
 implements both kinds of variant normalization and allows easy
