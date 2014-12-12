@@ -283,8 +283,13 @@ class NormalizedVariant(object):
             else:
                 # According to VCF standard, if there is no 5prime sequence,
                 # use 3prime sequence instead.
+                assert self.seq_3p
                 for i, allele in enumerate(self.alleles):
                     self.alleles[i] = self.alleles[i] + self.seq_3p[0]
+
+                self.position.chrom_stop += 1
+                self.seq_3p = self.seq_3p[1:]
+
 
         if len(set(a[0] for a in self.alleles)) != 1:
             raise AssertionError(

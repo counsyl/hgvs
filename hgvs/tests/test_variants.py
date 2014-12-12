@@ -65,8 +65,16 @@ class TestVariant(TestCase):
         """
         Test that final position is 1-index and end-inclusive.
         """
+        # Test SNP.
         genome = MockGenome(_genome_seq)
         normed_allele = normalize_variant(
             'chr11', 17417434, 'A', ['T'], genome)
         self.assertEqual(normed_allele.position.chrom_start, 17417434)
         self.assertEqual(normed_allele.position.chrom_stop, 17417434)
+
+        # Test INDEL with right padding.
+        genome = MockGenome(_genome_seq)
+        normed_allele = normalize_variant(
+            'chr1', 5, 'NN', ['N'], genome)
+        self.assertEqual(normed_allele.position.chrom_start, 1)
+        self.assertEqual(normed_allele.position.chrom_stop, 2)
