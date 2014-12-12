@@ -30,9 +30,6 @@ options.add_argument('-t', '--trans', required=True)
 options.add_argument('hgvs_name', nargs='*')
 
 
-#=============================================================================
-# Allele determination.
-
 def get_sequence(genome, chrom, start, end):
     """Return a sequence for the genomic region.
 
@@ -83,8 +80,6 @@ def determine_allele(genome, hgvs_name):
 
     return (chrom, start, ref, alts[0]), messages
 
-#=============================================================================
-# Main.
 
 if __name__ == '__main__':
     args = options.parse_args()
