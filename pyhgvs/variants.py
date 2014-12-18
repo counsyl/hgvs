@@ -82,6 +82,8 @@ def justify_genomic_indel(genome, chrom, start, end, indel, justify,
     """
     start, end: 0-based, end-exclusive coordinates of 'indel'.
     """
+    ref_len = end - start
+
     while True:
         seq_start = max(start - flank_length, 0)
         indel_len = len(indel)
@@ -102,7 +104,7 @@ def justify_genomic_indel(genome, chrom, start, end, indel, justify,
 
         # Get indel coordinates with chrom.
         start = seq_start + indel_start
-        end = seq_start + indel_end
+        end = start + ref_len
         if ((indel_start > 0 or seq_start == 0) and
                 (indel_end < len(seq) or seq_end == chrom_end)):
             return start, end, indel
@@ -208,6 +210,7 @@ class NormalizedVariant(object):
         # Remove common prefix from all alleles.
         if common_suffix:
             self.log.append('trim common suffix')
+            self.position.chrom_stop -= common_suffix
             self.seq_3p = self.alleles[0][-common_suffix:] + self.seq_3p
             for i, allele in enumerate(self.alleles):
                 self.alleles[i] = allele[:-common_suffix]
