@@ -27,14 +27,14 @@ The following output should be displayed:
 """
 
 import pyhgvs as hgvs
-import hgvs.utils as hgvs_utils
+import pyhgvs.utils as hgvs_utils
 from pygr.seqdb import SequenceFileDB
 
 # Read genome sequence using pygr.
 genome = SequenceFileDB('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
-with open('hgvs/data/genes.refGene') as infile:
+with open('pyhgvs/data/genes.refGene') as infile:
     transcripts = hgvs_utils.read_transcripts(infile)
 
 

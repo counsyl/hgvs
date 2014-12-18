@@ -139,7 +139,7 @@ def test_variant_to_name_counsyl():
     """
     genome = MockGenomeTestFile(
         db_filename='hg19.fa',
-        filename='pyhgvs/tests/data/test_variant_to_name.genome',
+        filename='pyhgvs/tests/data/test_variant_to_name_counsyl.genome',
         create_data=False)
 
     for (expected_hgvs_name, variant,

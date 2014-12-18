@@ -2,7 +2,7 @@
 from unittest import TestCase
 
 from ..variants import normalize_variant
-from .genome import MockGenome
+from .genome import MockGenomeTestFile
 
 
 _genome_seq = dict([
@@ -50,7 +50,10 @@ class TestVariant(TestCase):
         """
         Test normalize_variant against known cases.
         """
-        genome = MockGenome(_genome_seq)
+        genome = MockGenomeTestFile(
+            db_filename='hg19.fa',
+            filename='pyhgvs/tests/data/test_variants.genome',
+            create_data=False)
 
         for variant, true_variant in _normalize_tests:
             chrom, offset, ref, alts = variant
@@ -65,15 +68,24 @@ class TestVariant(TestCase):
         """
         Test that final position is 1-index and end-inclusive.
         """
+        genome = MockGenomeTestFile(
+            db_filename='hg19.fa',
+            filename='pyhgvs/tests/data/test_variants.2.genome',
+            create_data=False)
+
         # Test SNP.
-        genome = MockGenome(_genome_seq)
         normed_allele = normalize_variant(
             'chr11', 17417434, 'A', ['T'], genome)
         self.assertEqual(normed_allele.position.chrom_start, 17417434)
         self.assertEqual(normed_allele.position.chrom_stop, 17417434)
 
+        # Test INDEL with left adjustment.
+        normed_allele = normalize_variant(
+            'chr17', 3552198, 'T', ['AT'], genome)
+        self.assertEqual(normed_allele.position.chrom_start, 3552192)
+        self.assertEqual(normed_allele.position.chrom_stop, 3552192)
+
         # Test INDEL with right padding.
-        genome = MockGenome(_genome_seq)
         normed_allele = normalize_variant(
             'chr1', 5, 'NN', ['N'], genome)
         self.assertEqual(normed_allele.position.chrom_start, 1)
