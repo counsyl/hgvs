@@ -2,6 +2,7 @@
 
 from setuptools import setup
 from pip.req import parse_requirements
+from pip.download import PipSession
 import sys
 
 description = ("This library provides a simple to use Python API for parsing, "
@@ -32,7 +33,7 @@ def main():
         scripts=[],
         install_requires=['pip>=1.2'],
         tests_require=[str(line.req) for line in
-                       parse_requirements('requirements-dev.txt')],
+                       parse_requirements('requirements-dev.txt', session=PipSession())],
     )
 
 if __name__ == '__main__':
