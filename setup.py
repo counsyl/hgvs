@@ -20,7 +20,7 @@ def main():
 
     setup(
         name='pyhgvs',
-        version='0.9.3',
+        version='0.9.4',
         description='HGVS name parsing and formatting',
         long_description=description,
         author='Matt Rasmussen',
@@ -33,7 +33,8 @@ def main():
         scripts=[],
         install_requires=['pip>=1.2'],
         tests_require=[str(line.req) for line in
-                       parse_requirements('requirements-dev.txt', session=PipSession())],
+                       parse_requirements('requirements-dev.txt',
+                                          session=PipSession())],
     )
 
 if __name__ == '__main__':
