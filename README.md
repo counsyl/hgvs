@@ -166,5 +166,5 @@ external dependencies.
 The library does assume that genome sequence is available through a `pygr`
 compatible `SequenceFileDB` object. For an example of writing a wrapper for
 a different genome sequence back-end, see
-[hgvs.tests.genome.MockGenome](hgvs/tests/genome.py).
+[hgvs.tests.genome.MockGenome](pyhgvs/tests/genome.py).
 
