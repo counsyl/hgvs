@@ -92,7 +92,6 @@ BASE = [ACGT]
 BASES = BASE+
 
 """
-
 import re
 
 from .variants import justify_indel
@@ -746,6 +745,7 @@ class HGVSName(object):
         # Parse prefix and allele.
         self.parse_allele(allele)
         self.parse_prefix(prefix, self.kind)
+        self._validate()
 
     def parse_prefix(self, prefix, kind):
         """
@@ -969,6 +969,13 @@ class HGVSName(object):
                 return
 
         raise InvalidHGVSName(details, 'genomic allele')
+
+    def _validate(self):
+        """
+        Check for internal inconsistencies in representation
+        """
+        if self.start > self.end:
+            raise InvalidHGVSName(reason="Coordinates are nonincreasing")
 
     def __repr__(self):
         try:

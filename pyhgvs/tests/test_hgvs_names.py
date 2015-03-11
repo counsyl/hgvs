@@ -11,6 +11,7 @@ except:
 from .. import CDNACoord
 from .. import CDNA_STOP_CODON
 from .. import HGVSName
+from .. import InvalidHGVSName
 from .. import cdna_to_genomic_coord
 from .. import format_hgvs_name
 from .. import genomic_to_cdna_coord
@@ -175,6 +176,19 @@ def test_name_to_variant_refseqs():
         nose.tools.assert_equal(
             hgvs_variant, variant,
             repr([hgvs_name, variant, hgvs_variant]))
+
+
+@nose.tools.raises(InvalidHGVSName)
+def test_invalid_coordinates():
+    """
+    Regression test for 17
+    """
+    if not SequenceFileDB:
+        raise nose.SkipTest
+
+    genome = SequenceFileDB('pyhgvs/tests/data/test_refseqs.fa')
+    hgvs_name = 'NC_000005.10:g.177421339_177421327delACTCGAGTGCTCC'
+    parse_hgvs_name(hgvs_name, genome, get_transcript=get_transcript)
 
 
 # Test examples of cDNA coordinates.
