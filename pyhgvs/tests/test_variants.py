@@ -50,11 +50,12 @@ _normalize_tests = [
      ('chr1', 1, 'NN', ['N']),
      'left'),
 
-    # Trim common prefix, right-align, and 1bp pad.
+    # Insertion. Trim common prefix, right-align, and 1bp pad.
     (('chr17', 78078933, 'T', ['TGGGCA']),
      ('chr17', 78078946, 'G', ['GCAGGG']),
      'right'),
 
+    # Deletion. Trim common prefix, right-align, and 1bp pad.
     (('chr7', 117199644, 'ATCT', ['A']),
      ('chr7', 117199645, 'TCTT', ['T']),
      'right')
