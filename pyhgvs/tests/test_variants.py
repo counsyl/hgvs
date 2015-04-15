@@ -75,7 +75,7 @@ class TestVariant(TestCase):
         for variant, true_variant, justify in _normalize_tests:
             chrom, offset, ref, alts = variant
             norm_variant = normalize_variant(
-                chrom, offset, ref, alts, genome, justify).variant
+                chrom, offset, ref, alts, genome, justify=justify).variant
             self.assertEqual(
                 norm_variant, true_variant,
                 'Variant failed to normalize %s: %s != %s' %

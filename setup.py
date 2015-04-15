@@ -20,7 +20,7 @@ def main():
 
     setup(
         name='pyhgvs',
-        version='0.9.4',
+        version='0.9.5',
         description='HGVS name parsing and formatting',
         long_description=description,
         author='Matt Rasmussen',

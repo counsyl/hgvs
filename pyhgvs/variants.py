@@ -217,9 +217,9 @@ class NormalizedVariant(object):
 
     def _align(self, justify):
         """
-        Align variant as far to the left as possible.
+        Align variant as far to the left or right as possible.
         """
-        # Left/right aligning only makes sense for INDELs.
+        # Aligning only makes sense for INDELs.
         if self.molecular_class != "INDEL":
             return
 
