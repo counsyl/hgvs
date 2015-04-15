@@ -113,7 +113,7 @@ def justify_genomic_indel(genome, chrom, start, end, indel, justify,
 
 
 def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
-                      flank_length=30):
+                      justify='left', flank_length=30):
     """
     Normalize variant according to the GATK/VCF standard.
 
@@ -131,7 +131,7 @@ def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
         chrom_stop=end,
         is_forward_strand=True)
     return NormalizedVariant(position, ref_sequence, alt_sequences,
-                             genome=genome)
+                             genome=genome, justify=justify)
 
 
 class NormalizedVariant(object):
@@ -140,7 +140,7 @@ class NormalizedVariant(object):
     """
 
     def __init__(self, position, ref_allele, alt_alleles,
-                 seq_5p='', seq_3p='', genome=None):
+                 seq_5p='', seq_3p='', genome=None, justify='left'):
         """
         position: a 0-index genomic Position.
         ref_allele: the reference allele sequence.
@@ -159,7 +159,7 @@ class NormalizedVariant(object):
         self._on_forward_strand()
         self._trim_common_prefix()
         self._trim_common_suffix()
-        self._left_align()
+        self._align(justify)
         self._1bp_pad()
         self._set_1based_position()
 
@@ -215,11 +215,11 @@ class NormalizedVariant(object):
             for i, allele in enumerate(self.alleles):
                 self.alleles[i] = allele[:-common_suffix]
 
-    def _left_align(self):
+    def _align(self, justify):
         """
         Align variant as far to the left as possible.
         """
-        # Left-aligning only makes sense for INDELs.
+        # Left/right aligning only makes sense for INDELs.
         if self.molecular_class != "INDEL":
             return
 
@@ -236,7 +236,11 @@ class NormalizedVariant(object):
                 start, end, allele = justify_genomic_indel(
                     self.genome, self.position.chrom,
                     self.position.chrom_start, self.position.chrom_stop,
-                    allele, 'left')
+                    allele, justify)
+                # if right-aligning an insertion, insert at the end
+                if justify == 'right' and i != 0:
+                    start += len(allele)
+                    end += len(allele)
                 self.position.chrom_start = start
                 self.position.chrom_stop = end
                 flank_length = 30
@@ -248,7 +252,7 @@ class NormalizedVariant(object):
             else:
                 offset = len(self.seq_5p)
                 offset2, _, allele = justify_indel(
-                    offset, offset, allele, self.seq_5p, 'left')
+                    offset, offset, allele, self.seq_5p, justify)
                 delta = offset - offset2
                 if delta > 0:
                     self.position.chrom_start -= delta
