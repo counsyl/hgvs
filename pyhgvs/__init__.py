@@ -175,7 +175,7 @@ class HGVSRegex(object):
     PEP_REF2 = "(?P<ref2>" + PEP + ")"
     PEP_ALT = "(?P<alt>" + PEP + ")"
 
-    PEP_EXTRA = "(?P<extra>(|=|\?)(|fs))"
+    PEP_EXTRA = "(?P<extra>(|=|\?)(|fs((Ter|\*)\d+)?))"
 
     # Peptide allele syntax
     PEP_ALLELE = [
