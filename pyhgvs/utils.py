@@ -4,6 +4,8 @@ Helper functions.
 
 from itertools import imap
 
+from django.core.exceptions import ValidationError
+
 from .models import Exon
 from .models import Position
 from .models import Transcript
@@ -39,6 +41,10 @@ def read_refgene(infile):
         if line.startswith('#'):
             continue
         row = line.rstrip('\n').split('\t')
+        if len(row) != 16:
+            raise ValidationError(
+                'File has incorrect number of columns '
+                'in at least one line.', code='invalid')
 
         # Skip trailing ,
         exon_starts = map(int, row[9].split(',')[:-1])
