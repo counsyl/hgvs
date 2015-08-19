@@ -51,7 +51,7 @@ def read_refgene(infile):
 
         yield {
             'chrom': row[2],
-            'start': int(row[4]) + 1,
+            'start': int(row[4]),
             'end': int(row[5]),
             'id': row[1],
             'strand': row[3],
