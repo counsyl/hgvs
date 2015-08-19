@@ -47,7 +47,7 @@ def read_refgene(infile):
         # Skip trailing ,
         exon_starts = map(int, row[9].split(',')[:-1])
         exon_ends = map(int, row[10].split(',')[:-1])
-        exon_frames = map(int, row[15].split(','[:-1]))
+        exon_frames = map(int, row[15].split(',')[:-1])
         exons = zip(exon_starts, exon_ends, exon_frames)
 
         yield {
