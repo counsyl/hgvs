@@ -48,7 +48,7 @@ def read_refgene(infile):
         exon_starts = map(int, row[9].split(',')[:-1])
         exon_ends = map(int, row[10].split(',')[:-1])
         exon_frames = map(int, row[15].split(',')[:-1])
-        exons = zip(exon_starts, exon_ends, exon_frames)
+        exons = zip(exon_starts, exon_ends)
 
         yield {
             'chrom': row[2],
@@ -60,6 +60,7 @@ def read_refgene(infile):
             'cds_end': int(row[7]),
             'gene_name': row[12],
             'exons': exons,
+            'exon_frames': exon_frames
         }
 
 
@@ -93,7 +94,7 @@ def make_transcript(transcript_json):
     if not transcript.tx_position.is_forward_strand:
         exons = reversed(exons)
 
-    for exon_number, (exon_start, exon_end, exon_frame) in enumerate(exons, 1):
+    for exon_number, (exon_start, exon_end) in enumerate(exons, 1):
         transcript.exons.append(
             Exon(transcript=transcript,
                  tx_position=Position(
