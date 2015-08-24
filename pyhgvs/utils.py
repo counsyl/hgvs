@@ -42,7 +42,7 @@ def read_refgene(infile):
         if len(row) != 16:
             raise ValueError(
                 'File has incorrect number of columns '
-                'in at least one line.', code='invalid')
+                'in at least one line.')
 
         # Skip trailing ,
         exon_starts = map(int, row[9].split(',')[:-1])
