@@ -5,6 +5,8 @@ python:
   - "3.4"
   - "2.7"
   - "2.6"
+  - "pypy"
+  - "pypy3"
 install:
   - pip install -r requirements-dev.txt
   - python setup.py install
