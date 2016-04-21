@@ -1,5 +1,5 @@
 
-from io import StringIO
+from io import BytesIO
 
 import nose
 try:
@@ -787,4 +787,4 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = read_transcripts(StringIO(str(_refgene)))
+_transcripts = read_transcripts(BytesIO(str(_refgene)))
