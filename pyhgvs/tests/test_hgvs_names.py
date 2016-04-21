@@ -787,4 +787,7 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = read_transcripts(BytesIO(_refgene))
+try:
+    _transcripts = read_transcripts(BytesIO(_refgene))
+except TypeError:  # Py3
+    _transcripts = read_transcripts(StringIO(_refgene))
