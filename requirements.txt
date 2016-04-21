@@ -1,1 +1,0 @@
--e git://github.com/mdshw5/pyfaidx.git#egg=pyfaidx

@@ -1,32 +1,40 @@
-from setuptools import setup, Extension
-import distutils.core
+#!/usr/bin/env python
+
+from setuptools import setup
+from pip.req import parse_requirements
+from pip.download import PipSession
 import sys
-import os
 
 description = ("This library provides a simple to use Python API for parsing, "
                "formatting, and normalizing variant names specified in the "
                "standard recommended by the Human Genome Variation Society "
-               "(HGVS). This is a fork of the Counsyl package, updated to use "
-               "pyfaidx for indexed fasta access.")
+               "(HGVS).")
 
-setup(
-        name='hgvs',
-        version='0.8',
+def main():
+    python_version = sys.version_info
+    if python_version < (2, 6):
+        print(("This library requires Python version >=2.6, "
+               "You have version %d.%d" % python_version[:2]))
+        sys.exit(1)
+
+    setup(
+        name='pyhgvs',
+        version='0.9.4',
         description='HGVS name parsing and formatting',
         long_description=description,
-        author='Matthew Shirley',
-        license = 'MIT',
-        author_email='mdshw5@gmail.com',
-        packages=['hgvs', 'hgvs.tests'],
-        install_requires=['pyfaidx'],
-        classifiers = [
-                "Development Status :: 3 - Alpha",
-                "License :: OSI Approved :: MIT License",
-                "Environment :: Console",
-                "Intended Audience :: Science/Research",
-                "Natural Language :: English",
-                "Operating System :: Unix",
-                "Programming Language :: Python :: 3.3",
-                "Topic :: Scientific/Engineering :: Bio-Informatics"
-        ]
-)
+        author='Matt Rasmussen',
+        author_email='rasmus@counsyl.com',
+        packages=['pyhgvs', 'pyhgvs.tests'],
+        include_package_data=True,
+        package_data={
+            '': ['requirements-dev.txt'],
+        },
+        scripts=[],
+        install_requires=['pip>=1.2'],
+        tests_require=[str(line.req) for line in
+                       parse_requirements('requirements-dev.txt',
+                                          session=PipSession())],
+    )
+
+if __name__ == '__main__':
+    main()

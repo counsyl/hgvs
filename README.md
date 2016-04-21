@@ -73,7 +73,7 @@ are equivalent (e.g. it doesn't matter which `AT` in a run of
 specify such indels by using the most left-aligned genomic coordinate.
 Therefore, compliant variant callers that output VCF will have applied
 this normalization.  The HGVS standard also specifies a normalization
-for such indels. However, it states that indels should use the most 5'
+for such indels. However, it states that indels should use the most 3'
 position in a transcript.  For genes on the positive strand, this is
 the opposite direction specified by VCF.  This library properly
 implements both kinds of variant normalization and allows easy
@@ -95,16 +95,16 @@ and transcripts are read from a RefSeqGenes flat-file using methods
 provided by `hgvs`.
 
 ```python
-import hgvs
-import hgvs.utils
-from pyfaidx import Genome
+import pyhgvs as hgvs
+import hgvs.utils as hgvs_utils
+from pyfaidx import Fasta
 
 # Read genome sequence using pyfaidx.
-genome = Genome('hg19.fa')
+genome = Fasta('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('hgvs/data/genes.refGene') as infile:
-    transcripts = hgvs.utils.read_transcripts(infile)
+    transcripts = hgvs_utils.read_transcripts(infile)
 
 # Provide a callback for fetching a transcript by its name.
 def get_transcript(name):
@@ -129,7 +129,7 @@ The `hgvs` library can also perform just the parsing step and provide
 a parse tree of the HGVS name.
 
 ```python
-import hgvs
+import pyhgvs as hgvs
 
 hgvs_name = hgvs.HGVSName('NM_000352.3:c.215-10A>G')
 
@@ -162,11 +162,10 @@ python setup.py nosetests
 
 ## Requirements
 
-This library requires at least Python 3.3, but otherwise has no
+This library requires at least Python 2.6, but otherwise has no
 external dependencies.
 
 The library does assume that genome sequence is available through a `pyfaidx`
-compatible `Genome` object. For an example of writing a wrapper for
+compatible `Fasta` object. For an example of writing a wrapper for
 a different genome sequence back-end, see
-[hgvs.tests.genome.MockGenome](hgvs/tests/genome.py).
-
+[hgvs.tests.genome.MockGenome](pyhgvs/tests/genome.py).

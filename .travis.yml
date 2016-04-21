@@ -1,9 +1,10 @@
 language: python
 python:
-  - "3.3"
-install: 
-  - pip install -r requirements.txt 
+  - "3.5"
+  - "3.2"
+  - "2.7"
+  - "2.6"
+install:
+  - pip install -r requirements-dev.txt
   - python setup.py install
 script: nosetests
-
-    
