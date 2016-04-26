@@ -244,11 +244,13 @@ class ChromosomeSubset(object):
         """Return sequence from region [start, end)
 
         Coordinates are 0-based, end-exclusive."""
-        assert isinstance(key, slice)
-        start, end = (key.start, key.stop)
-        start -= self.genome.start
-        end -= self.genome.start
-        return self.genome.genome[self.genome.seqid][start:end]
+        if isinstance(key, slice):
+            start, end = (key.start, key.stop)
+            start -= self.genome.start
+            end -= self.genome.start
+            return self.genome.genome[self.genome.seqid][start:end]
+        else:
+            raise TypeError('Expected a slice object but received a {0}.'.format(type(key)))
 
     def __repr__(self):
         return 'ChromosomeSubset("%s")' % (self.name)

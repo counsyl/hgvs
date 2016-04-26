@@ -106,7 +106,7 @@ def read_transcripts(refgene_file):
     Read all transcripts in a RefGene file.
     """
     transcripts = {}
-    for trans in map(make_transcript, read_refgene(refgene_file)):
+    for trans in (make_transcript(record) for record in read_refgene(refgene_file)):
         transcripts[trans.name] = trans
         transcripts[trans.full_name] = trans
 
