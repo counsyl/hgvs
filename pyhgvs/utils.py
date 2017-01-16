@@ -2,7 +2,11 @@
 Helper functions.
 """
 
-from itertools import imap
+try:
+    from itertools import imap
+except ImportError:
+    # Python 3
+    imap=map
 
 from .models import Exon
 from .models import Position
@@ -43,7 +47,7 @@ def read_refgene(infile):
         # Skip trailing ,
         exon_starts = map(int, row[9].split(',')[:-1])
         exon_ends = map(int, row[10].split(',')[:-1])
-        exons = zip(exon_starts, exon_ends)
+        exons = list(zip(exon_starts, exon_ends))
 
         yield {
             'chrom': row[2],
