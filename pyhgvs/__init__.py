@@ -1201,7 +1201,7 @@ class HGVSName(object):
         # Represent duplications are inserts.
         if self.mutation_type == "dup":
             alleles[0] = ""
-            alleles[1] = alleles[1][:len(alleles[1]) / 2]
+            alleles[1] = alleles[1][:int(len(alleles[1]) / 2)]
 
         if is_forward_strand:
             return alleles
