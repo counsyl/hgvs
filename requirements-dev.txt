@@ -1,4 +1,4 @@
 flake8==2.2.5
-pyfaidx>=0.4.7.1
+pyfaidx==0.5.0.1
 pytest==3.2.3
 tox-travis==0.8

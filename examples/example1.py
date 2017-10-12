@@ -26,6 +26,7 @@ The following output should be displayed:
   ('NM_000352.3', 'c', '>', CDNACoord(215, -10), CDNACoord(215, -10), 'A', 'G')
 
 """
+from __future__ import print_function
 
 import pyhgvs as hgvs
 import pyhgvs.utils as hgvs_utils

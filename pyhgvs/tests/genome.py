@@ -8,7 +8,7 @@ try:
     from pyfaidx import Genome as SequenceFileDB
     # Allow pyflakes to ignore redefinition in except clause.
     SequenceFileDB
-except:
+except ImportError:
     SequenceFileDB = None
 
 
@@ -36,7 +36,6 @@ class MockChromosome(object):
         self.name = name
         self.genome = genome
         
-
     def __getitem__(self, n):
         """Return sequence from region [start, end)
 
@@ -119,11 +118,11 @@ class MockGenome(object):
 
         filename: a filename string or file stream.
         """
-        if isinstance(filename, str):
+        if hasattr(filename, 'read'):
+            infile = filename
+        else:
             with open(filename) as infile:
                 return self.read(infile)
-        else:
-            infile = filename
 
         for line in infile:
             tokens = line.rstrip().split('\t')
@@ -134,11 +133,11 @@ class MockGenome(object):
 
     def write(self, filename):
         """Write a sequence lookup table to file."""
-        if isinstance(filename, str):
+        if hasattr(filename, 'write'):
+            out = filename
+        else:
             with open(filename, 'w') as out:
                 return self.write(out)
-        else:
-            out = filename
 
         for (chrom, start, end), seq in self._lookup.items():
             out.write('\t'.join(map(str, [chrom, start, end, seq])) + '\n')

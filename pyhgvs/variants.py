@@ -179,7 +179,7 @@ class NormalizedVariant(object):
         """
         Trim the common prefix amongst all alleles.
         """
-        minlength = min(list(map(len, self.alleles)))
+        minlength = min(map(len, self.alleles))
         common_prefix = 0
         for i in range(minlength):
             if len(set(allele[i] for allele in self.alleles)) > 1:
@@ -199,7 +199,7 @@ class NormalizedVariant(object):
         """
         Trim the common suffix amongst all alleles.
         """
-        minlength = min(list(map(len, self.alleles)))
+        minlength = min(map(len, self.alleles))
         common_suffix = 0
         for i in range(1, minlength+1):
             if len(set(allele[-i] for allele in self.alleles)) > 1:
