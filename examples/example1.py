@@ -28,6 +28,7 @@ The following output should be displayed:
 """
 from __future__ import print_function
 
+from __future__ import unicode_literals
 import pyhgvs as hgvs
 import pyhgvs.utils as hgvs_utils
 from pyfaidx import Fasta

@@ -2,6 +2,8 @@
 Models for representing genomic elements.
 """
 
+from __future__ import unicode_literals
+
 from collections import namedtuple
 
 

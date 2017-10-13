@@ -92,6 +92,9 @@ BASE = [ACGT]
 BASES = BASE+
 
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import re
 
 from .variants import justify_indel

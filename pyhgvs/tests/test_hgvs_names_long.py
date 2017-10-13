@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from .. import parse_hgvs_name
 from ..utils import read_transcripts
 from ..variants import normalize_variant
