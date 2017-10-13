@@ -542,7 +542,7 @@ def cdna_to_genomic_coord(transcript, coord):
     # 5' flanking sequence.
     if pos < 1:
         if transcript_strand:
-            return transcript.tx_position.chrom_start + pos - 1
+            return transcript.tx_position.chrom_start + pos
         else:
             return transcript.tx_position.chrom_stop - pos + 1
 
@@ -1370,7 +1370,7 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     if transcript and hgvs.transcript in genome:
         # Reference sequence is directly known, use it.
         genome = GenomeSubset(genome, transcript.tx_position.chrom,
-                              transcript.tx_position.chrom_start - 1,
+                              transcript.tx_position.chrom_start,
                               transcript.tx_position.chrom_stop,
                               hgvs.transcript)
 

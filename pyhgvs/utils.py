@@ -40,15 +40,20 @@ def read_refgene(infile):
         if line.startswith('#'):
             continue
         row = line.rstrip('\n').split('\t')
+        if len(row) != 16:
+            raise ValueError(
+                'File has incorrect number of columns '
+                'in at least one line.')
 
         # Skip trailing ,
         exon_starts = list(map(int, row[9].split(',')[:-1]))
         exon_ends = list(map(int, row[10].split(',')[:-1]))
+        exon_frames = list(map(int, row[15].split(',')[:-1]))
         exons = list(zip(exon_starts, exon_ends))
 
         yield {
             'chrom': row[2],
-            'start': int(row[4]) + 1,
+            'start': int(row[4]),
             'end': int(row[5]),
             'id': row[1],
             'strand': row[3],
@@ -56,6 +61,7 @@ def read_refgene(infile):
             'cds_end': int(row[7]),
             'gene_name': row[12],
             'exons': exons,
+            'exon_frames': exon_frames
         }
 
 
