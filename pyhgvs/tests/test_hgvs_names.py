@@ -76,7 +76,7 @@ def test_parse_name():
     """
     for name, formatable, expected in _parse_names:
         hgvs_parsed = HGVSName(name)
-        for key, value in list(expected.items()):
+        for key, value in expected.items():
             nose.tools.assert_equal(
                 getattr(hgvs_parsed, key), value,
                 (getattr(hgvs_parsed, key), value, name, expected))

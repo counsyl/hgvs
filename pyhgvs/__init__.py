@@ -590,7 +590,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
 
     distances = [exon.distance(genomic_coord)
                  for exon in exons]
-    min_distance_to_exon = min(list(map(abs, distances)))
+    min_distance_to_exon = min(map(abs, distances))
 
     coding_offset = 0
     for exon in exons:
