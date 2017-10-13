@@ -250,10 +250,11 @@ class ChromosomeSubset(object):
             end -= self.genome.start
             return self.genome.genome[self.genome.seqid][start:end]
         else:
-            raise TypeError('Expected a slice object but received a {0}.'.format(type(key)))
+            raise TypeError('Expected a slice object but '
+                            'received a {0}.'.format(type(key)))
 
     def __repr__(self):
-        return 'ChromosomeSubset("%s")' % (self.name)
+        return 'ChromosomeSubset("%s")' % self.name
 
 
 class GenomeSubset(object):

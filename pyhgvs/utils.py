@@ -3,7 +3,6 @@ Helper functions.
 """
 
 
-
 from .models import Exon
 from .models import Position
 from .models import Transcript

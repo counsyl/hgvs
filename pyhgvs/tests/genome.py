@@ -35,7 +35,7 @@ class MockChromosome(object):
     def __init__(self, name, genome=None):
         self.name = name
         self.genome = genome
-        
+
     def __getitem__(self, n):
         """Return sequence from region [start, end)
 
