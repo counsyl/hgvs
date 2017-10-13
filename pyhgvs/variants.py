@@ -173,7 +173,7 @@ class NormalizedVariant(object):
             seq_3p = self.seq_3p
             self.seq_5p = revcomp(seq_3p)
             self.seq_3p = revcomp(seq_5p)
-            self.alleles = map(revcomp, self.alleles)
+            self.alleles = [revcomp(allele) for allele in self.alleles]
 
     def _trim_common_prefix(self):
         """

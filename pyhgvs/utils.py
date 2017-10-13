@@ -2,7 +2,7 @@
 Helper functions.
 """
 
-from itertools import imap
+
 
 from .models import Exon
 from .models import Position
@@ -41,9 +41,9 @@ def read_refgene(infile):
         row = line.rstrip('\n').split('\t')
 
         # Skip trailing ,
-        exon_starts = map(int, row[9].split(',')[:-1])
-        exon_ends = map(int, row[10].split(',')[:-1])
-        exons = zip(exon_starts, exon_ends)
+        exon_starts = list(map(int, row[9].split(',')[:-1]))
+        exon_ends = list(map(int, row[10].split(',')[:-1]))
+        exons = list(zip(exon_starts, exon_ends))
 
         yield {
             'chrom': row[2],
@@ -106,7 +106,7 @@ def read_transcripts(refgene_file):
     Read all transcripts in a RefGene file.
     """
     transcripts = {}
-    for trans in imap(make_transcript, read_refgene(refgene_file)):
+    for trans in (make_transcript(record) for record in read_refgene(refgene_file)):
         transcripts[trans.name] = trans
         transcripts[trans.full_name] = trans
 

@@ -10,12 +10,11 @@ description = ("This library provides a simple to use Python API for parsing, "
                "standard recommended by the Human Genome Variation Society "
                "(HGVS).")
 
-
 def main():
     python_version = sys.version_info
     if python_version < (2, 6):
-        print ("This library requires Python version >=2.6, "
-               "You have version %d.%d" % python_version[:2])
+        print(("This library requires Python version >=2.6, "
+               "You have version %d.%d" % python_version[:2]))
         sys.exit(1)
 
     setup(

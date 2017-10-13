@@ -1,11 +1,9 @@
+from io import BytesIO, StringIO
 
-from StringIO import StringIO
-
-import nose
+import pytest
 try:
-    from pygr.seqdb import SequenceFileDB
-except:
-    SequenceFileDB
+    from pyfaidx import Fasta as SequenceFileDB
+except ImportError:
     SequenceFileDB = None
 
 from .. import CDNACoord
@@ -32,7 +30,7 @@ def test_parse_cdna_coord():
     Parse cDNA coordinates.
     """
     for text, expected in _parse_cdna_coords:
-        nose.tools.assert_equal(CDNACoord(string=text), expected)
+        assert CDNACoord(string=text) == expected
 
 
 def test_fromat_cdna_coord():
@@ -40,7 +38,7 @@ def test_fromat_cdna_coord():
     Format cDNA coordinates.
     """
     for expected_text, coord in _parse_cdna_coords:
-        nose.tools.assert_equal(str(coord), expected_text)
+        assert str(coord) == expected_text
 
 
 def test_genomic_to_cdna_coord():
@@ -50,10 +48,7 @@ def test_genomic_to_cdna_coord():
     for transcript_name, genomic_coord, cdna_coord_expected in _convert_coords:
         transcript = get_transcript(transcript_name)
         cdna_coord = genomic_to_cdna_coord(transcript, genomic_coord[1])
-        nose.tools.assert_equal(
-            cdna_coord, cdna_coord_expected,
-            repr((cdna_coord, cdna_coord_expected,
-                  transcript_name, genomic_coord)))
+        assert cdna_coord == cdna_coord_expected
 
 
 def test_cdna_to_genomic_coord():
@@ -63,10 +58,7 @@ def test_cdna_to_genomic_coord():
     for transcript_name, genomic_coord_expected, cdna_coord in _convert_coords:
         transcript = get_transcript(transcript_name)
         genomic_coord = cdna_to_genomic_coord(transcript, cdna_coord)
-        nose.tools.assert_equal(
-            genomic_coord, genomic_coord_expected[1],
-            repr((genomic_coord, genomic_coord_expected[1],
-                  transcript_name, cdna_coord)))
+        assert genomic_coord == genomic_coord_expected[1]
 
 
 def test_parse_name():
@@ -75,10 +67,8 @@ def test_parse_name():
     """
     for name, formatable, expected in _parse_names:
         hgvs_parsed = HGVSName(name)
-        for key, value in expected.items():
-            nose.tools.assert_equal(
-                getattr(hgvs_parsed, key), value,
-                (getattr(hgvs_parsed, key), value, name, expected))
+        for key, value in list(expected.items()):
+            assert getattr(hgvs_parsed, key) == value
 
 
 def test_format_name():
@@ -88,8 +78,7 @@ def test_format_name():
     for expected_name, formatable, attrs in _parse_names:
         if formatable:
             name = HGVSName(**attrs).format()
-            nose.tools.assert_equal(name, expected_name,
-                                    (name, expected_name, attrs))
+            assert name == expected_name
 
 
 def test_name_to_variant():
@@ -105,9 +94,7 @@ def test_name_to_variant():
         if var_canonical:
             hgvs_variant = parse_hgvs_name(hgvs_name, genome,
                                            get_transcript=get_transcript)
-            nose.tools.assert_equal(
-                hgvs_variant, variant,
-                repr([hgvs_name, variant, hgvs_variant]))
+            assert hgvs_variant == variant
 
 
 def test_variant_to_name():
@@ -129,9 +116,7 @@ def test_variant_to_name():
             hgvs_name = format_hgvs_name(
                 chrom, offset, ref, alt, genome, transcript,
                 use_gene=False)
-            nose.tools.assert_equal(
-                hgvs_name, expected_hgvs_name,
-                repr([hgvs_name, expected_hgvs_name, variant]))
+            assert hgvs_name == expected_hgvs_name
 
 
 def test_variant_to_name_counsyl():
@@ -153,9 +138,7 @@ def test_variant_to_name_counsyl():
             hgvs_name = format_hgvs_name(
                 chrom, offset, ref, alt, genome, transcript,
                 use_gene=False, use_counsyl=True)
-            nose.tools.assert_equal(
-                hgvs_name, expected_hgvs_name,
-                repr([hgvs_name, expected_hgvs_name, variant]))
+            assert hgvs_name == expected_hgvs_name
 
 
 def test_name_to_variant_refseqs():
@@ -163,7 +146,7 @@ def test_name_to_variant_refseqs():
     Convert HGVS names to variant coordinates using refseqs directly.
     """
     if not SequenceFileDB:
-        print 'skip test_name_to_variant_refseqs'
+        print('skip test_name_to_variant_refseqs')
         return
     genome = SequenceFileDB('pyhgvs/tests/data/test_refseqs.fa')
 
@@ -173,22 +156,19 @@ def test_name_to_variant_refseqs():
             continue
         hgvs_variant = parse_hgvs_name(hgvs_name, genome,
                                        get_transcript=get_transcript)
-        nose.tools.assert_equal(
-            hgvs_variant, variant,
-            repr([hgvs_name, variant, hgvs_variant]))
+        assert hgvs_variant == variant
 
 
-@nose.tools.raises(InvalidHGVSName)
+@pytest.mark.skipif(SequenceFileDB is None,
+                    reason='SequenceFileDB was not importable')
 def test_invalid_coordinates():
     """
     Regression test for 17
     """
-    if not SequenceFileDB:
-        raise nose.SkipTest
-
     genome = SequenceFileDB('pyhgvs/tests/data/test_refseqs.fa')
     hgvs_name = 'NC_000005.10:g.177421339_177421327delACTCGAGTGCTCC'
-    parse_hgvs_name(hgvs_name, genome, get_transcript=get_transcript)
+    with pytest.raises(InvalidHGVSName):
+        parse_hgvs_name(hgvs_name, genome, get_transcript=get_transcript)
 
 
 # Test examples of cDNA coordinates.
@@ -788,4 +768,7 @@ _refgene = '\n'.join([
 
 
 # Mock transcripts.
-_transcripts = read_transcripts(StringIO(_refgene))
+try:
+    _transcripts = read_transcripts(BytesIO(_refgene))
+except TypeError:  # Py3
+    _transcripts = read_transcripts(StringIO(_refgene))
