@@ -42,8 +42,8 @@ class MockChromosome(object):
         Coordinates are 0-based, end-exclusive."""
         if isinstance(n, slice):
             return self.genome.get_seq(self.name, n.start, n.stop)
-        elif isinstance(n, key):
-            return self.genome.get_seq(self.name, n.start, n.start)
+        else:
+            return self.genome.get_seq(self.name, n, n+1)
 
     def __repr__(self):
         return 'MockChromosome("%s")' % (self.name)
