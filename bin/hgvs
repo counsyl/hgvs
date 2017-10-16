@@ -4,16 +4,12 @@ import argparse
 import logging
 import sys
 
+from pyfaidx import Fasta
 import pyhgvs
 from pyhgvs import parse_hgvs_name
 from pyhgvs.variants import normalize_variant
 from pyhgvs.utils import read_transcripts
 
-import pygr.logger
-from pygr.seqdb import SequenceFileDB
-
-# Disable pygr logging to stdout
-pygr.logger.get_logger().setLevel('ERROR')
 
 # Setup logging.
 logger = logging.getLogger("clinvar")
@@ -85,12 +81,12 @@ if __name__ == '__main__':
     args = options.parse_args()
 
     # Read genome and transcripts.
-    genome = SequenceFileDB(args.fasta)
+    genome = Fasta(args.fasta)
     with open(args.trans) as infile:
         transcripts = read_transcripts(infile)
 
     gene2transcript = {transcript.gene.name: transcript
-                       for transcript in transcripts.itervalues()}
+                       for transcript in transcripts.values()}
 
     if args.hgvs_name:
         hgvs_names = args.hgvs_name
@@ -98,7 +94,7 @@ if __name__ == '__main__':
         hgvs_names = (line.rstrip() for line in sys.stdin)
 
     headers = ['name', 'chrom', 'start', 'ref', 'alt', 'messages']
-    print '\t'.join(map(str, headers))
+    print('\t'.join(map(str, headers)))
 
     for allele_name in hgvs_names:
         allele, messages = determine_allele(genome, allele_name)
@@ -108,4 +104,4 @@ if __name__ == '__main__':
             row = [allele_name, chrom, start, ref, alt, message]
         else:
             row = [allele_name, '', '', '', '', message]
-        print '\t'.join(map(str, row))
+        print('\t'.join(map(str, row)))

@@ -92,6 +92,9 @@ BASE = [ACGT]
 BASES = BASE+
 
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import re
 
 from .variants import justify_indel
@@ -240,16 +243,21 @@ class ChromosomeSubset(object):
         self.name = name
         self.genome = genome
 
-    def __getslice__(self, start, end, step=1):
+    def __getitem__(self, key):
         """Return sequence from region [start, end)
 
         Coordinates are 0-based, end-exclusive."""
-        start -= self.genome.start
-        end -= self.genome.start
-        return self.genome.genome[self.genome.seqid][start:end]
+        if isinstance(key, slice):
+            start, end = (key.start, key.stop)
+            start -= self.genome.start
+            end -= self.genome.start
+            return self.genome.genome[self.genome.seqid][start:end]
+        else:
+            raise TypeError('Expected a slice object but '
+                            'received a {0}.'.format(type(key)))
 
     def __repr__(self):
-        return 'ChromosomeSubset("%s")' % (self.name)
+        return 'ChromosomeSubset("%s")' % self.name
 
 
 class GenomeSubset(object):
@@ -667,7 +675,6 @@ def get_vcf_allele(hgvs, genome, transcript=None):
     if hgvs.mutation_type in _indel_mutation_types:
         # Left-pad alternate allele.
         alt = ref[0] + alt
-
     return chrom, start, end, ref, alt
 
 
@@ -1201,7 +1208,7 @@ class HGVSName(object):
         # Represent duplications are inserts.
         if self.mutation_type == "dup":
             alleles[0] = ""
-            alleles[1] = alleles[1][:len(alleles[1]) / 2]
+            alleles[1] = alleles[1][:len(alleles[1]) // 2]
 
         if is_forward_strand:
             return alleles
@@ -1242,9 +1249,9 @@ def hgvs_justify_dup(chrom, offset, ref, alt, genome):
     offset -= 1
 
     # Get genomic sequence around the lesion.
-    prev_seq = unicode(
+    prev_seq = str(
         genome[str(chrom)][offset - indel_length:offset]).upper()
-    next_seq = unicode(
+    next_seq = str(
         genome[str(chrom)][offset:offset + indel_length]).upper()
 
     # Convert offset back to 1-index.
@@ -1282,7 +1289,7 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
     # Get genomic sequence around the lesion.
     start = max(offset - 100, 0)
     end = offset + 100
-    seq = unicode(genome[str(chrom)][start - 1:end]).upper()
+    seq = str(genome[str(chrom)][start - 1:end]).upper()
     cds_offset = offset - start
 
     # indel -- strip off the ref base to get the actual lesion sequence
@@ -1334,7 +1341,7 @@ def hgvs_normalize_variant(chrom, offset, ref, alt, genome, transcript=None):
 
 def parse_hgvs_name(hgvs_name, genome, transcript=None,
                     get_transcript=lambda name: None,
-                    flank_length=30, normalize=True):
+                    flank_length=30, normalize=True, lazy=False):
     """
     Parse an HGVS name into (chrom, start, end, ref, alt)
 
@@ -1342,11 +1349,16 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     genome: pygr compatible genome object.
     transcript: Transcript corresponding to HGVS name.
     normalize: If True, normalize allele according to VCF standard.
+    lazy: If True, discard version information from incoming transcript/gene.
     """
     hgvs = HGVSName(hgvs_name)
 
     # Determine transcript.
     if hgvs.kind == 'c' and not transcript:
+        if '.' in hgvs.transcript and lazy:
+            hgvs.transcript, version = hgvs.transcript.split('.')
+        elif '.' in hgvs.gene and lazy:
+            hgvs.gene, version = hgvs.gene.split('.')
         if get_transcript:
             if hgvs.transcript:
                 transcript = get_transcript(hgvs.transcript)

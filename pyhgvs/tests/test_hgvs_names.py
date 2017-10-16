@@ -1,11 +1,12 @@
+from __future__ import print_function
+from __future__ import unicode_literals
 
-from StringIO import StringIO
+from io import StringIO
 
 import nose
 try:
-    from pygr.seqdb import SequenceFileDB
-except:
-    SequenceFileDB
+    from pyfaidx import Fasta as SequenceFileDB
+except ImportError:
     SequenceFileDB = None
 
 from .. import CDNACoord
@@ -163,7 +164,7 @@ def test_name_to_variant_refseqs():
     Convert HGVS names to variant coordinates using refseqs directly.
     """
     if not SequenceFileDB:
-        print 'skip test_name_to_variant_refseqs'
+        print('skip test_name_to_variant_refseqs')
         return
     genome = SequenceFileDB('pyhgvs/tests/data/test_refseqs.fa')
 
@@ -694,26 +695,26 @@ _name_variants = [
 
     # Single letter del and insert.
     ('NM_000016.4:c.945+4delAinsGC',
-     ('chr1', 76216234, u'AA', 'AGC'), True, True),
+     ('chr1', 76216234, 'AA', 'AGC'), True, True),
     ('NM_000030.2:c.308delGinsTCCTGGTTGA',
-     ('chr2', 241808728, u'GG', 'GTCCTGGTTGA'), False, True),
+     ('chr2', 241808728, 'GG', 'GTCCTGGTTGA'), False, True),
     ('NM_000038.5:c.1617delCinsGAA',
-     ('chr5', 112163693, u'AC', 'AGAA'), True, True),
+     ('chr5', 112163693, 'AC', 'AGAA'), True, True),
     ('NM_000038.5:c.4256delGinsCC',
-     ('chr5', 112175546, u'AG', 'ACC'), True, True),
+     ('chr5', 112175546, 'AG', 'ACC'), True, True),
     ('NM_000038.5:c.4256delGins5',
-     ('chr5', 112175546, u'AG', 'ANNNNN'), False, True),
+     ('chr5', 112175546, 'AG', 'ANNNNN'), False, True),
 
     # Delete region.
     ('NM_000016.4:c.291_296delTCTTGG',
-     ('chr1', 76199214, u'AGGTCTT', 'A'),  False, True),
+     ('chr1', 76199214, 'AGGTCTT', 'A'),  False, True),
     ('NM_000016.4:c.306_307insG',
-     ('chr1', 76199232, u'T', 'TG'), False, True),
+     ('chr1', 76199232, 'T', 'TG'), False, True),
     ('NM_000016.4:c.343_348delGGATGT',
-     ('chr1', 76199267, u'ATGGATG', 'A'), False, True),
-    ('NM_000016.4:c.430_432delAAG', ('chr1', 76200511, u'AAAG', 'A'),
+     ('chr1', 76199267, 'ATGGATG', 'A'), False, True),
+    ('NM_000016.4:c.430_432delAAG', ('chr1', 76200511, 'AAAG', 'A'),
      True, True),
-    ('NM_000016.4:c.430_432del3', ('chr1', 76200511, u'AAAG', 'A'),
+    ('NM_000016.4:c.430_432del3', ('chr1', 76200511, 'AAAG', 'A'),
      False, True),
 
     # Single letter insert, delete, duplication.
@@ -753,12 +754,12 @@ _name_variants = [
      ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False, True),
 
     # Genomic single letter del and insert.
-    ('chr1:g.76216235delAinsGC', ('chr1', 76216234, u'AA', 'AGC'),
+    ('chr1:g.76216235delAinsGC', ('chr1', 76216234, 'AA', 'AGC'),
      False, True),
 
     # Genomic delete region.
     ('chr1:g.76199215_76199220delGGTCTT',
-     ('chr1', 76199214, u'AGGTCTT', 'A'), False, True),
+     ('chr1', 76199214, 'AGGTCTT', 'A'), False, True),
 
     # Non-canonical.
     ('NM_000492.3:c.1210-7_1210-6dupTT',

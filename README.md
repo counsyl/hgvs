@@ -88,17 +88,17 @@ needed: the genome sequence (needed for normalization), and the
 transcript model or a callback for fetching the transcript model
 (needed for transcript coordinate calculations).  This library makes
 as few assumptions as possible about how this external data is stored.
-In this example, the genome sequence is read using the `pygr` library
+In this example, the genome sequence is read using the `pyfaidx` library
 and transcripts are read from a RefSeqGenes flat-file using methods
 provided by `hgvs`.
 
 ```python
 import pyhgvs as hgvs
 import hgvs.utils as hgvs_utils
-from pygr.seqdb import SequenceFileDB
+from pyfaidx import Fasta
 
-# Read genome sequence using pygr.
-genome = SequenceFileDB('hg19.fa')
+# Read genome sequence using pyfaidx.
+genome = Fasta('hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('hgvs/data/genes.refGene') as infile:
@@ -163,8 +163,7 @@ python setup.py nosetests
 This library requires at least Python 2.6, but otherwise has no
 external dependencies.
 
-The library does assume that genome sequence is available through a `pygr`
-compatible `SequenceFileDB` object. For an example of writing a wrapper for
+The library does assume that genome sequence is available through a `pyfaidx`
+compatible `Fasta` object. For an example of writing a wrapper for
 a different genome sequence back-end, see
 [hgvs.tests.genome.MockGenome](pyhgvs/tests/genome.py).
-
