@@ -1075,6 +1075,9 @@ class HGVSName(object):
             # example: 1000_1001insATG
             return self.mutation_type + self.alt_allele
 
+        elif self.mutation_type == 'inv':
+            return self.mutation_type
+
         else:
             raise AssertionError(
                 "unknown mutation type: '%s'" % self.mutation_type)
