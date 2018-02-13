@@ -27,7 +27,7 @@ def main():
         long_description=description,
         author='Matt Rasmussen',
         author_email='rasmus@counsyl.com',
-        packages=['pyhgvs', 'pyhgvs.tests'],
+        packages=[str('pyhgvs'), str('pyhgvs.tests')],
         include_package_data=True,
         scripts=[],
         install_requires=['pip>=1.2'],
