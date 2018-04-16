@@ -3,8 +3,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from setuptools import setup
-from pip.req import parse_requirements
-from pip.download import PipSession
 import sys
 
 description = ("This library provides a simple to use Python API for parsing, "
@@ -31,9 +29,11 @@ def main():
         include_package_data=True,
         scripts=[],
         install_requires=['pip>=1.2'],
-        tests_require=[str(line.req) for line in
-                       parse_requirements('requirements-dev.txt',
-                                          session=PipSession())],
+        tests_require=[
+          'flake8==2.2.5',
+          'nose==1.3.7',
+          'pyfaidx==0.5.0.1',
+        ],
     )
 
 

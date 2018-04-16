@@ -7,6 +7,7 @@
 # FASTA files
 *.fa.seqlen
 *.fa.pureseq
+*.fa.fai
 
 # C extensions
 *.so
@@ -24,6 +25,7 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+.venv
 
 # Installer logs
 pip-log.txt
