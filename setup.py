@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-from pip.req import parse_requirements
-from pip.download import PipSession
+try:  # pip 9 or earlier
+    from pip.req import parse_requirements
+    from pip.download import PipSession
+except ImportError:  # pip 10 or later
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import PipSession
 import sys
 
 description = ("This library provides a simple to use Python API for parsing, "
