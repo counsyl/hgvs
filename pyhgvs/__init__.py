@@ -170,12 +170,12 @@ class HGVSRegex(object):
                            for regex in CDNA_ALLELE]
 
     # Peptide syntax
-    PEP = "([A-Z]([a-z]{2}))+"
+    PEP = "(([A-Z]([a-z]{2}))|([GAVLIMFWPSTCYNQDEKRH\*]))+"
     PEP_REF = "(?P<ref>" + PEP + ")"
     PEP_REF2 = "(?P<ref2>" + PEP + ")"
     PEP_ALT = "(?P<alt>" + PEP + ")"
 
-    PEP_EXTRA = "(?P<extra>(|=|\?)(|fs))"
+    PEP_EXTRA = "(?P<extra>(|=|\?)(|fs((Ter|\*)\d+)?))"
 
     # Peptide allele syntax
     PEP_ALLELE = [
