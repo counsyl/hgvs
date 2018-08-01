@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-from pip.req import parse_requirements
-from pip.download import PipSession
 import sys
 
 description = ("This library provides a simple to use Python API for parsing, "
@@ -20,7 +18,7 @@ def main():
 
     setup(
         name='pyhgvs',
-        version='0.9.4',
+        version='0.9.5',
         description='HGVS name parsing and formatting',
         long_description=description,
         author='Matt Rasmussen',
@@ -31,10 +29,7 @@ def main():
             '': ['requirements-dev.txt'],
         },
         scripts=[],
-        install_requires=['pip>=1.2'],
-        tests_require=[str(line.req) for line in
-                       parse_requirements('requirements-dev.txt',
-                                          session=PipSession())],
+        tests_require=[l.strip() for l in open('requirements-dev.txt') if l],
     )
 
 if __name__ == '__main__':
