@@ -123,13 +123,22 @@ def test_variant_to_name():
     for (expected_hgvs_name, variant,
          name_canonical, var_canonical) in _name_variants:
         if name_canonical:
-            transcript_name = HGVSName(expected_hgvs_name).transcript
-            transcript = get_transcript(transcript_name)
-            assert transcript, transcript_name
+            hgvs = HGVSName(expected_hgvs_name)
+            transcript_name = hgvs.transcript
+            transcript = None
+            if transcript_name:
+                transcript = get_transcript(transcript_name)
+                assert transcript, transcript_name
             chrom, offset, ref, alt = variant
             hgvs_name = format_hgvs_name(
                 chrom, offset, ref, alt, genome, transcript,
                 use_gene=False)
+
+            if hgvs.kind == 'g':
+                # Strip off g.HGVS prefix
+                i = expected_hgvs_name.find(":g.")
+                expected_hgvs_name = expected_hgvs_name[i+1:]
+
             nose.tools.assert_equal(
                 hgvs_name, expected_hgvs_name,
                 repr([hgvs_name, expected_hgvs_name, variant]))
@@ -723,7 +732,11 @@ _name_variants = [
     ('NM_000016.4:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True, True),
     ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True, True),
     ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True, True),
+    # Same as above but without optional trailing base
+    ('NM_000016.4:c.1189dup', ('chr1', 76227049, 'C', 'CT'), False, True),
     ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True, True),
+    # Same as above but without optional trailing base
+    ('NM_000016.4:c.1191del', ('chr1', 76227051, 'AT', 'A'), False, True),
     ('NM_000016.4:c.306_307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
 
     # Alignment tests for HGVS 3' and VCF left-alignment.
@@ -734,6 +747,9 @@ _name_variants = [
      True, True),
     ('NM_000492.3:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'),
      True, True),
+    # Same as above but without optional trailing base
+    ('NM_000492.3:c.1155_1156dup', ('chr7', 117182104, 'A', 'AAT'),
+     False, True),
     ('NM_000492.3:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True, True),
 
     # Transcript prefix.
@@ -750,11 +766,21 @@ _name_variants = [
     ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False, True),
 
     # Genomic indels.
+    ('chr17:g.7126029_7126030insTG',
+     ('chr17', 7126028, 'A', 'AGT'), True, True),
+
     ('chr17:g.7126029_7126037delGCAGAGGTGinsTCAAAGCAC',
      ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False, True),
 
     # Genomic single letter del and insert.
     ('chr1:g.76216235delAinsGC', ('chr1', 76216234, 'AA', 'AGC'),
+     False, True),
+
+    # Genomic dup
+    ('chr7:g.117182108_117182109dup', ('chr7', 117182104, 'A', 'AAT'),
+     False, True),
+
+    ('chr7:g.117182105_117182106dupAT', ('chr7', 117182104, 'A', 'AAT'),
      False, True),
 
     # Genomic delete region.
