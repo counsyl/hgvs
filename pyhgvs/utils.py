@@ -11,57 +11,52 @@ from .models import Transcript
 
 
 def read_refgene(infile):
-    """
-    Iterate through a refGene file.
+    """ refGene = genePred with extra column at front (and ignored ones after) """
+    return read_genepred(infile, skip_first_column=True)
 
+
+def read_genepred(infile, skip_first_column=False):
+    """
     GenePred extension format:
     http://genome.ucsc.edu/FAQ/FAQformat.html#GenePredExt
 
     Column definitions:
-    0. uint undocumented id
-    1. string name;             "Name of gene (usually transcript_id from GTF)"
-    2. string chrom;                "Chromosome name"
-    3. char[1] strand;              "+ or - for strand"
-    4. uint txStart;                "Transcription start position"
-    5. uint txEnd;                  "Transcription end position"
-    6. uint cdsStart;               "Coding region start"
-    7. uint cdsEnd;                 "Coding region end"
-    8. uint exonCount;              "Number of exons"
-    9. uint[exonCount] exonStarts;  "Exon start positions"
-    10. uint[exonCount] exonEnds;   "Exon end positions"
-    11. uint id;                    "Unique identifier"
-    12. string name2;               "Alternate name (e.g. gene_id from GTF)"
-    13. string cdsStartStat;        "enum('none','unk','incmpl','cmpl')"
-    14. string cdsEndStat;          "enum('none','unk','incmpl','cmpl')"
-    15. lstring exonFrames;         "Exon frame offsets {0,1,2}"
+    0. string name;                 "Name of gene (usually transcript_id from GTF)"
+    1. string chrom;                "Chromosome name"
+    2. char[1] strand;              "+ or - for strand"
+    3. uint txStart;                "Transcription start position"
+    4. uint txEnd;                  "Transcription end position"
+    5. uint cdsStart;               "Coding region start"
+    6. uint cdsEnd;                 "Coding region end"
+    7. uint exonCount;              "Number of exons"
+    8. uint[exonCount] exonStarts;  "Exon start positions"
+    9. uint[exonCount] exonEnds;    "Exon end positions"
+    10. uint id;                    "Unique identifier"
+    11. string name2;               "Alternate name (e.g. gene_id from GTF)"
     """
     for line in infile:
         # Skip comments.
         if line.startswith('#'):
             continue
         row = line.rstrip('\n').split('\t')
-        if len(row) != 16:
-            raise ValueError(
-                'File has incorrect number of columns '
-                'in at least one line.')
+        if skip_first_column:
+            row = row[1:]
 
         # Skip trailing ,
-        exon_starts = list(map(int, row[9].split(',')[:-1]))
-        exon_ends = list(map(int, row[10].split(',')[:-1]))
-        exon_frames = list(map(int, row[15].split(',')[:-1]))
+        exon_starts = list(map(int, row[8].split(',')[:-1]))
+        exon_ends = list(map(int, row[9].split(',')[:-1]))
         exons = list(zip(exon_starts, exon_ends))
 
         yield {
-            'chrom': row[2],
-            'start': int(row[4]),
-            'end': int(row[5]),
-            'id': row[1],
-            'strand': row[3],
-            'cds_start': int(row[6]),
-            'cds_end': int(row[7]),
-            'gene_name': row[12],
+            'chrom': row[1],
+            'start': int(row[3]),
+            'end': int(row[4]),
+            'id': row[0],
+            'strand': row[2],
+            'cds_start': int(row[5]),
+            'cds_end': int(row[6]),
+            'gene_name': row[11],
             'exons': exons,
-            'exon_frames': exon_frames
         }
 
 

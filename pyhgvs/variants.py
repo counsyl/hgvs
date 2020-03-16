@@ -115,7 +115,7 @@ def justify_genomic_indel(genome, chrom, start, end, indel, justify,
 
 
 def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
-                      justify='left', flank_length=30):
+                      justify='left', flank_length=30, indels_start_with_same_base=True):
     """
     Normalize variant according to the GATK/VCF standard.
 
@@ -133,7 +133,7 @@ def normalize_variant(chrom, offset, ref_sequence, alt_sequences, genome,
         chrom_stop=end,
         is_forward_strand=True)
     return NormalizedVariant(position, ref_sequence, alt_sequences,
-                             genome=genome, justify=justify)
+                             genome=genome, justify=justify, indels_start_with_same_base=indels_start_with_same_base)
 
 
 class NormalizedVariant(object):
@@ -142,7 +142,8 @@ class NormalizedVariant(object):
     """
 
     def __init__(self, position, ref_allele, alt_alleles,
-                 seq_5p='', seq_3p='', genome=None, justify='left'):
+                 seq_5p='', seq_3p='', genome=None, justify='left',
+                 indels_start_with_same_base=True):
         """
         position: a 0-index genomic Position.
         ref_allele: the reference allele sequence.
@@ -150,6 +151,9 @@ class NormalizedVariant(object):
         seq_5p: 5 prime flanking sequence of variant.
         seq_3p: 3 prime flanking sequence of variant.
         genome: a pygr compatible genome object (optional).
+        
+        indels_start_with_same_base: DML - I have no idea why this is required
+                                           but am keeping for backwards compat
         """
         self.position = position
         self.alleles = [ref_allele] + list(alt_alleles)
@@ -157,6 +161,7 @@ class NormalizedVariant(object):
         self.seq_3p = seq_3p
         self.genome = genome
         self.log = []
+        self.indels_start_with_same_base = indels_start_with_same_base
 
         self._on_forward_strand()
         self._trim_common_prefix()
@@ -275,7 +280,7 @@ class NormalizedVariant(object):
         # Pad sequences with one 5-prime base before the mutation event.
         empty_seq = any(not allele for allele in self.alleles)
         uniq_starts = set(allele[0] for allele in self.alleles if allele)
-        if empty_seq or len(uniq_starts) > 1:
+        if empty_seq or (self.indels_start_with_same_base and len(uniq_starts) > 1):
             # Fetch more 5p flanking sequence if needed.
             if self.genome and self.seq_5p == '':
                 start = self.position.chrom_start
@@ -299,9 +304,10 @@ class NormalizedVariant(object):
                 self.seq_3p = self.seq_3p[1:]
                 self.position.chrom_stop += 1
 
-        if len(set(a[0] for a in self.alleles)) != 1:
-            raise AssertionError(
-                "All INDEL alleles should start with same base.")
+        if self.indels_start_with_same_base:
+            if len(set(a[0] for a in self.alleles)) != 1:
+                raise AssertionError(
+                    "All INDEL alleles should start with same base.")
 
     def _set_1based_position(self):
         """

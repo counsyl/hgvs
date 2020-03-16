@@ -27,7 +27,7 @@ class Gene(object):
 
 
 class Transcript(object):
-    """RefGene Transcripts for hg19
+    """
 
     A gene may have multiple transcripts with different combinations of exons.
     """

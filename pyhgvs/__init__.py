@@ -655,7 +655,7 @@ def genomic_to_cdna_coord(transcript, genomic_coord):
 
 def get_allele(hgvs, genome, transcript=None):
     """Get an allele from a HGVSName, a genome, and a transcript."""
-    chrom, start, end = hgvs.get_coords(transcript)
+    chrom, start, end = hgvs.get_ref_coords(transcript)
     _, alt = hgvs.get_ref_alt(
         transcript.tx_position.is_forward_strand if transcript else True)
     ref = get_genomic_sequence(genome, chrom, start, end)
@@ -673,16 +673,31 @@ def get_vcf_allele(hgvs, genome, transcript=None):
     ref = get_genomic_sequence(genome, chrom, start, end)
 
     if hgvs.mutation_type in _indel_mutation_types:
+        if hgvs.mutation_type == 'dup':
+            # Sometimes we need to retrieve alt from reference, eg:
+            # No alt supplied: NM_000492.3:c.1155_1156dup
+            # Number used:     NM_004119.2(FLT3):c.1794_1811dup18
+            # We *know* what the sequence is for "dup18", but not for "ins18"
+            if not hgvs.alt_allele or re.match("^N+$", hgvs.alt_allele):
+                alt = get_alt_from_sequence(hgvs, genome, transcript)
+
         # Left-pad alternate allele.
         alt = ref[0] + alt
     return chrom, start, end, ref, alt
 
 
+def get_alt_from_sequence(hgvs, genome, transcript):
+    """ returns ready for VCF """
+
+    chrom, start, end = hgvs.get_raw_coords(transcript)
+    return get_genomic_sequence(genome, chrom, start, end)
+
+
 def matches_ref_allele(hgvs, genome, transcript=None):
     """Return True if reference allele matches genomic sequence."""
-    ref, alt = hgvs.get_ref_alt(
+    ref, _ = hgvs.get_ref_alt(
         transcript.tx_position.is_forward_strand if transcript else True)
-    chrom, start, end = hgvs.get_coords(transcript)
+    chrom, start, end = hgvs.get_ref_coords(transcript)
     genome_ref = get_genomic_sequence(genome, chrom, start, end)
     return genome_ref == ref
 
@@ -1146,8 +1161,8 @@ class HGVSName(object):
         """
         return self.format_coords() + self.format_dna_allele()
 
-    def get_coords(self, transcript=None):
-        """Return genomic coordinates of reference allele."""
+    def get_raw_coords(self, transcript=None):
+        """ return genomic coordinates """
         if self.kind == 'c':
             chrom = transcript.tx_position.chrom
             start = cdna_to_genomic_coord(transcript, self.cdna_start)
@@ -1158,27 +1173,14 @@ class HGVSName(object):
                     raise AssertionError(
                         "cdna_start cannot be greater than cdna_end")
                 start, end = end, start
-            else:
-                if start > end:
-                    raise AssertionError(
-                        "cdna_start cannot be greater than cdna_end")
 
-            if self.mutation_type == "ins":
-                # Inserts have empty interval.
-                if start < end:
-                    start += 1
-                    end -= 1
-                else:
-                    end = start - 1
-
-            elif self.mutation_type == "dup":
-                end = start - 1
-
+            if start > end:
+                raise AssertionError(
+                    "cdna_start cannot be greater than cdna_end")
         elif self.kind == 'g':
             chrom = self.chrom
             start = self.start
             end = self.end
-
         else:
             raise NotImplementedError(
                 'Coordinates are not available for this kind of HGVS name "%s"'
@@ -1186,9 +1188,26 @@ class HGVSName(object):
 
         return chrom, start, end
 
+    def get_ref_coords(self, transcript=None):
+        """Return genomic coordinates of reference allele."""
+        
+        chrom, start, end = self.get_raw_coords(transcript)
+        
+        if self.mutation_type == "ins":
+            # Inserts have empty interval.
+            if start < end:
+                start += 1
+                end -= 1
+            else:
+                end = start - 1
+
+        elif self.mutation_type == "dup":
+            end = start - 1
+        return chrom, start, end
+
     def get_vcf_coords(self, transcript=None):
         """Return genomic coordinates of reference allele in VCF-style."""
-        chrom, start, end = self.get_coords(transcript)
+        chrom, start, end = self.get_ref_coords(transcript)
 
         # Inserts and deletes require left-padding by 1 base
         if self.mutation_type in ("=", ">"):
@@ -1344,7 +1363,8 @@ def hgvs_normalize_variant(chrom, offset, ref, alt, genome, transcript=None):
 
 def parse_hgvs_name(hgvs_name, genome, transcript=None,
                     get_transcript=lambda name: None,
-                    flank_length=30, normalize=True, lazy=False):
+                    flank_length=30, normalize=True, lazy=False,
+                    indels_start_with_same_base=True):
     """
     Parse an HGVS name into (chrom, start, end, ref, alt)
 
@@ -1353,15 +1373,16 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     transcript: Transcript corresponding to HGVS name.
     normalize: If True, normalize allele according to VCF standard.
     lazy: If True, discard version information from incoming transcript/gene.
+    indels_start_with_same_base: When normalizing, don't strip common prefix from indels
     """
     hgvs = HGVSName(hgvs_name)
 
     # Determine transcript.
     if hgvs.kind == 'c' and not transcript:
         if '.' in hgvs.transcript and lazy:
-            hgvs.transcript, version = hgvs.transcript.split('.')
+            hgvs.transcript, _ = hgvs.transcript.split('.')
         elif '.' in hgvs.gene and lazy:
-            hgvs.gene, version = hgvs.gene.split('.')
+            hgvs.gene, _ = hgvs.gene.split('.')
         if get_transcript:
             if hgvs.transcript:
                 transcript = get_transcript(hgvs.transcript)
@@ -1377,11 +1398,12 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
                               transcript.tx_position.chrom_stop,
                               hgvs.transcript)
 
-    chrom, start, end, ref, alt = get_vcf_allele(hgvs, genome, transcript)
+    chrom, start, _, ref, alt = get_vcf_allele(hgvs, genome, transcript)
     if normalize:
-        chrom, start, ref, [alt] = normalize_variant(
-            chrom, start, ref, [alt], genome,
-            flank_length=flank_length).variant
+        nv = normalize_variant(chrom, start, ref, [alt], genome,
+                               flank_length=flank_length,
+                               indels_start_with_same_base=indels_start_with_same_base)
+        chrom, start, ref, [alt] = nv.variant
     return (chrom, start, ref, alt)
 
 
@@ -1408,11 +1430,19 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
     hgvs = HGVSName()
 
     # Populate coordinates.
+    if mutation_type == 'ins':
+        # Insert uses coordinates around the insert point.
+        offset_start = offset - 1
+        offset_end = offset
+    else:
+        offset_start = offset
+        offset_end = offset + len(ref) - 1
+
     if not transcript:
         # Use genomic coordinate when no transcript is available.
         hgvs.kind = 'g'
-        hgvs.start = offset
-        hgvs.end = offset + len(ref) - 1
+        hgvs.start = offset_start
+        hgvs.end = offset_end
     else:
         # Use cDNA coordinates.
         hgvs.kind = 'c'
@@ -1425,14 +1455,6 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
             hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset)
             hgvs.cdna_end = hgvs.cdna_start
         else:
-            # Use a range of coordinates.
-            if mutation_type == 'ins':
-                # Insert uses coordinates around the insert point.
-                offset_start = offset - 1
-                offset_end = offset
-            else:
-                offset_start = offset
-                offset_end = offset + len(ref) - 1
             if transcript.strand == '-':
                 offset_start, offset_end = offset_end, offset_start
             hgvs.cdna_start = genomic_to_cdna_coord(transcript, offset_start)
