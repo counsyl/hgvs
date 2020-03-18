@@ -34,7 +34,7 @@ import pyhgvs.utils as hgvs_utils
 from pyfaidx import Fasta
 
 # Read genome sequence using pyfaidx.
-genome = Genome('/tmp/hg19.fa')
+genome = Fasta('/tmp/hg19.fa')
 
 # Read RefSeq transcripts into a python dict.
 with open('pyhgvs/data/genes.refGene') as infile:
