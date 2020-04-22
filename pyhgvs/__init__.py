@@ -672,9 +672,13 @@ def get_vcf_allele(hgvs, genome, transcript=None):
         transcript.tx_position.is_forward_strand if transcript else True)
     ref = get_genomic_sequence(genome, chrom, start, end)
 
+    # Sometimes we need to retrieve alt from reference
+    # Eg NC_000001.11:g.169549811=
+    if hgvs.mutation_type == "=" and alt == 'N':
+        alt = ref
+
     if hgvs.mutation_type in _indel_mutation_types:
         if hgvs.mutation_type == 'dup':
-            # Sometimes we need to retrieve alt from reference, eg:
             # No alt supplied: NM_000492.3:c.1155_1156dup
             # Number used:     NM_004119.2(FLT3):c.1794_1811dup18
             # We *know* what the sequence is for "dup18", but not for "ins18"
