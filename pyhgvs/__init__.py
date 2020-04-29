@@ -853,7 +853,7 @@ class HGVSName(object):
             self.parse_cdna(details)
         elif kind == "p":
             self.parse_protein(details)
-        elif kind == "g":
+        elif kind in ["g", "m"]:
             self.parse_genome(details)
         else:
             raise NotImplementedError("unknown kind: %s" % allele)
@@ -1019,8 +1019,8 @@ class HGVSName(object):
             allele = 'c.' + self.format_cdna()
         elif self.kind == 'p':
             allele = 'p.' + self.format_protein()
-        elif self.kind == 'g':
-            allele = 'g.' + self.format_genome()
+        elif self.kind in ['g', 'm']:
+            allele = self.kind + '.' + self.format_genome()
         else:
             raise NotImplementedError("not implemented: '%s'" % self.kind)
 
@@ -1040,7 +1040,7 @@ class HGVSName(object):
           NM_007294.3(BRCA1):c.2207A>C
         """
 
-        if self.kind == 'g':
+        if self.kind in ['g', 'm']:
             if self.chrom:
                 return self.chrom
 
@@ -1181,7 +1181,7 @@ class HGVSName(object):
             if start > end:
                 raise AssertionError(
                     "cdna_start cannot be greater than cdna_end")
-        elif self.kind == 'g':
+        elif self.kind in ['g', 'm']:
             chrom = self.chrom
             start = self.start
             end = self.end
