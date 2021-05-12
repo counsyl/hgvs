@@ -849,7 +849,7 @@ class HGVSName(object):
         self.kind = kind
         self.mutation_type = None
 
-        if kind == "c":
+        if kind in ("c", 'n'):
             self.parse_cdna(details)
         elif kind == "p":
             self.parse_protein(details)
@@ -1017,6 +1017,8 @@ class HGVSName(object):
 
         if self.kind == 'c':
             allele = 'c.' + self.format_cdna()
+        elif self.kind == 'n':
+            allele = 'n.' + self.format_cdna()
         elif self.kind == 'p':
             allele = 'p.' + self.format_protein()
         elif self.kind == 'g':
@@ -1167,7 +1169,7 @@ class HGVSName(object):
 
     def get_raw_coords(self, transcript=None):
         """ return genomic coordinates """
-        if self.kind == 'c':
+        if self.kind in ('c', 'n'):
             chrom = transcript.tx_position.chrom
             start = cdna_to_genomic_coord(transcript, self.cdna_start)
             end = cdna_to_genomic_coord(transcript, self.cdna_end)
@@ -1382,7 +1384,7 @@ def parse_hgvs_name(hgvs_name, genome, transcript=None,
     hgvs = HGVSName(hgvs_name)
 
     # Determine transcript.
-    if hgvs.kind == 'c' and not transcript:
+    if hgvs.kind in ('c', 'n') and not transcript:
         if '.' in hgvs.transcript and lazy:
             hgvs.transcript, _ = hgvs.transcript.split('.')
         elif '.' in hgvs.gene and lazy:
@@ -1449,7 +1451,11 @@ def variant_to_hgvs_name(chrom, offset, ref, alt, genome, transcript,
         hgvs.end = offset_end
     else:
         # Use cDNA coordinates.
-        hgvs.kind = 'c'
+        if transcript.is_coding:
+            hgvs.kind = 'c'
+        else:
+            hgvs.kind = 'n'
+
         is_single_base_indel = (
             (mutation_type == 'ins' and len(alt) == 1) or
             (mutation_type in ('del', 'delins', 'dup') and len(ref) == 1))
