@@ -851,6 +851,11 @@ class HGVSName(object):
 
         if kind in ("c", 'n'):
             self.parse_cdna(details)
+            if kind == 'n':  # Ensure no 3'UTR or 5'UTR coords in non-coding
+                if self.cdna_start.coord < 0:
+                    raise InvalidHGVSName(allele, 'allele', "Non-coding transcript cannot contain negative (5'UTR) coordinates")
+                if self.cdna_start.landmark == 'cdna_stop' or self.cdna_end and self.cdna_end.landmark == 'cdna_stop':
+                    raise InvalidHGVSName(allele, 'allele', "Non-coding transcript cannot contain '*' (3'UTR) coordinates")
         elif kind == "p":
             self.parse_protein(details)
         elif kind == "g":
