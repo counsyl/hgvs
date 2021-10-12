@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import itertools
 import os
 
-from ..variants import revcomp
+from ..models.variants import revcomp
 
 
 try:

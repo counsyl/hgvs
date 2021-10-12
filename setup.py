@@ -31,6 +31,7 @@ def main():
         install_requires=['pip>=1.2'],
         tests_require=[
           'flake8==2.2.5',
+          'lazy==1.4',
           'nose==1.3.7',
           'pyfaidx==0.5.0.1',
         ],

@@ -9,13 +9,9 @@ try:
 except ImportError:
     SequenceFileDB = None
 
-from .. import CDNACoord
-from .. import CDNA_STOP_CODON
-from .. import HGVSName
-from .. import InvalidHGVSName
-from .. import cdna_to_genomic_coord
+from ..models.cdna import CDNACoord, CDNA_STOP_CODON
+from ..models.hgvs_name import HGVSName, InvalidHGVSName
 from .. import format_hgvs_name
-from .. import genomic_to_cdna_coord
 from .. import parse_hgvs_name
 from ..utils import read_transcripts
 from .genome import MockGenomeTestFile
@@ -50,7 +46,7 @@ def test_genomic_to_cdna_coord():
     """
     for transcript_name, genomic_coord, cdna_coord_expected in _convert_coords:
         transcript = get_transcript(transcript_name)
-        cdna_coord = genomic_to_cdna_coord(transcript, genomic_coord[1])
+        cdna_coord = transcript.genomic_to_cdna_coord(genomic_coord[1])
         nose.tools.assert_equal(
             cdna_coord, cdna_coord_expected,
             repr((cdna_coord, cdna_coord_expected,
@@ -63,7 +59,7 @@ def test_cdna_to_genomic_coord():
     """
     for transcript_name, genomic_coord_expected, cdna_coord in _convert_coords:
         transcript = get_transcript(transcript_name)
-        genomic_coord = cdna_to_genomic_coord(transcript, cdna_coord)
+        genomic_coord = transcript.cdna_to_genomic_coord(cdna_coord)
         nose.tools.assert_equal(
             genomic_coord, genomic_coord_expected[1],
             repr((genomic_coord, genomic_coord_expected[1],

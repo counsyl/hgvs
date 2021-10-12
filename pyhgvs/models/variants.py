@@ -5,11 +5,22 @@ Methods for manipulating genetic variants.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from .models import Position
-
-
 _COMP = dict(A='T', C='G', G='C', T='A', N='N',
              a='t', c='g', g='c', t='a', n='n')
+
+
+class Position(object):
+    """A position in the genome."""
+
+    def __init__(self, chrom, chrom_start, chrom_stop, is_forward_strand):
+        self.chrom = chrom
+        self.chrom_start = chrom_start
+        self.chrom_stop = chrom_stop
+        self.is_forward_strand = is_forward_strand
+
+    def __repr__(self):
+        return "<Position %s[%d:%d]>" % (
+            self.chrom, self.chrom_start, self.chrom_stop)
 
 
 def revcomp(seq):
@@ -151,7 +162,7 @@ class NormalizedVariant(object):
         seq_5p: 5 prime flanking sequence of variant.
         seq_3p: 3 prime flanking sequence of variant.
         genome: a pygr compatible genome object (optional).
-        
+
         indels_start_with_same_base: DML - I have no idea why this is required
                                            but am keeping for backwards compat
         """
@@ -208,7 +219,7 @@ class NormalizedVariant(object):
         """
         minlength = min(map(len, self.alleles))
         common_suffix = 0
-        for i in range(1, minlength+1):
+        for i in range(1, minlength + 1):
             if len(set(allele[-i] for allele in self.alleles)) > 1:
                 # Not all alleles match at this site, so common suffix ends.
                 break

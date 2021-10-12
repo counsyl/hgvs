@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from ..variants import normalize_variant
+from ..models.variants import normalize_variant
 from .genome import MockGenomeTestFile
 
 

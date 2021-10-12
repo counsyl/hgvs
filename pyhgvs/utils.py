@@ -5,9 +5,8 @@ Helper functions.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from .models import Exon
-from .models import Position
-from .models import Transcript
+from .models.variants import Position
+from .models.transcript import Exon, Transcript
 
 
 def read_refgene(infile):
