@@ -211,7 +211,7 @@ _parse_cdna_coords = [
 ]
 
 
-# Test examples of coverting coordinates.
+# Test examples of converting coordinates.
 _convert_coords = [
     # Positions near start codon.
     ('NM_000016.4', ('chr1', 76190473), CDNACoord(1)),

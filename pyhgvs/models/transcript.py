@@ -18,19 +18,22 @@ class Gene(object):
 
 class Transcript(object):
     """
-
     A gene may have multiple transcripts with different combinations of exons.
     """
 
     def __init__(self, name, version, gene, tx_position, cds_position,
-                 is_default=False, exons=None):
+                 is_default=False, cdna_match=None):
         self.name = name
         self.version = version
         self.gene = Gene(gene)
         self.tx_position = tx_position
         self.cds_position = cds_position
         self.is_default = is_default
-        self.exons = exons if exons else []
+        self.cdna_match = cdna_match or []
+
+    @lazy
+    def exons(self):
+        return self.cdna_match
 
     @property
     def full_name(self):
@@ -49,10 +52,15 @@ class Transcript(object):
     def strand(self):
         return ('+' if self.tx_position.is_forward_strand else '-')
 
-    @property
-    def coding_exons(self):
-        return [exon.get_as_interval(coding_only=True)
-                for exon in self.exons]
+    @lazy
+    def ordered_cdna_match(self):
+        """ Coding order """
+        transcript_strand = self.tx_position.is_forward_strand
+        cdna_match = list(self.cdna_match)
+        cdna_match.sort(key=lambda cm: cm.tx_position.chrom_start)
+        if not transcript_strand:
+            cdna_match.reverse()
+        return cdna_match
 
     @lazy
     def ordered_exons(self):
@@ -67,13 +75,6 @@ class Transcript(object):
             exons.reverse()
         return exons
 
-    def get_coding_exons(self):
-        """Yield non-empty coding exonic regions in coding order."""
-        for exon in self.ordered_exons:
-            region = exon.get_as_interval(coding_only=True)
-            if region:
-                yield region
-
     def get_utr5p_size(self):
         """Return the size of the 5prime UTR of a transcript."""
 
@@ -83,19 +84,22 @@ class Transcript(object):
         start_codon = (self.cds_position.chrom_start if transcript_strand
                        else self.cds_position.chrom_stop - 1)
         cdna_len = 0
-        for exon in self.ordered_exons:
-            exon_start = exon.tx_position.chrom_start
-            exon_end = exon.tx_position.chrom_stop
-            if exon_start <= start_codon < exon_end:
+        for cdna_match in self.ordered_cdna_match:
+            start = cdna_match.tx_position.chrom_start
+            end = cdna_match.tx_position.chrom_stop
+            if start <= start_codon < end:
+                # We're inside this match
+                if transcript_strand:
+                    position = start_codon - start
+                else:
+                    position = end - start_codon - 1
+                cdna_len += position + cdna_match.get_offset(position)
                 break
-            cdna_len += exon_end - exon_start
+            cdna_len += cdna_match.length
         else:
-            raise ValueError("transcript contains no exons")
+            raise ValueError("transcript contains no cdna_match")
 
-        if transcript_strand:
-            return cdna_len + (start_codon - exon_start)
-        else:
-            return cdna_len + (exon_end - start_codon - 1)
+        return cdna_len
 
     def find_stop_codon(self, cds_position):
         """Return the position along the cDNA of the base after the stop codon."""
@@ -248,6 +252,7 @@ class Transcript(object):
 
         return cdna_coord
 
+
 BED6Interval_base = namedtuple(
     "BED6Interval_base", (
         "chrom",
@@ -284,15 +289,23 @@ class BED6Interval(BED6Interval_base):
             return -end_distance
 
 
-class Exon(object):
-    def __init__(self, transcript, tx_position, exon_number):
+class CDNA_Match(object):
+    """ An exon is a special case of a cDNA match which has 0 gaps """
+    def __init__(self, transcript, tx_position, cdna_start, cdna_end, gap, number):
         self.transcript = transcript
         self.tx_position = tx_position
-        self.exon_number = exon_number
+        self.cdna_start = cdna_start
+        self.cdna_end = cdna_end
+        self.gap = gap
+        self.number = number
 
     @property
-    def get_exon_name(self):
-        return "%s.%d" % (self.transcript.name, self.exon_number)
+    def length(self):
+        return self.cdna_end - self.cdna_start + 1
+
+    @property
+    def name(self):
+        return "%s.%d" % (self.transcript.name, self.number)
 
     def get_as_interval(self, coding_only=False):
         """Returns the coding region for this exon as a BED6Interval.
@@ -324,7 +337,7 @@ class Exon(object):
             self.tx_position.chrom,
             exon_start,
             exon_stop,
-            self.get_exon_name,
+            self.name,
             '.',
             self.strand,
         )
@@ -333,3 +346,43 @@ class Exon(object):
     def strand(self):
         strand = '+' if self.tx_position.is_forward_strand else '-'
         return strand
+
+    def get_offset(self, position: int):
+        """ cdna_match GAP attribute looks like: 'M185 I3 M250' which is code/length
+            @see https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md#the-gap-attribute
+            codes operation
+            M 	match
+            I 	insert a gap into the reference sequence
+            D 	insert a gap into the target (delete from reference)
+
+            If you want the whole exon, then pass the end
+        """
+
+        if not self.gap:
+            return 0
+
+        match_i = 0
+        offset = 0
+        for gap_op in self.gap.split():
+            code = gap_op[0]
+            length = int(gap_op[1:])
+            if code == "M":
+                match_i += length
+            elif code == "I":
+                if position <= match_i + length:
+                    raise ValueError("Coordinate inside insertion (%s) - no mapping possible!" % gap_op)
+                offset += length
+            elif code == "D":
+                if position <= match_i + length:
+                    raise ValueError("Coordinate inside deletion (%s) - no mapping possible!" % gap_op)
+                offset -= length
+            else:
+                raise ValueError(f"Unknown code in cDNA GAP: {gap_op}")
+
+            #if self.transcript.name == "NM_000016":
+            #    print(f"{position}: {code} {length} - {offset=}, {match_i=}")
+
+            if match_i >= position:
+                break
+
+        return offset

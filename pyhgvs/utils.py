@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from .models.variants import Position
-from .models.transcript import Exon, Transcript
+from .models.transcript import Transcript, CDNA_Match
 
 
 def read_refgene(infile):
@@ -85,21 +85,59 @@ def make_transcript(transcript_json):
             transcript_json['cds_end'],
             transcript_json['strand'] == '+'))
 
-    exons = transcript_json['exons']
-    if not transcript.tx_position.is_forward_strand:
-        exons = reversed(exons)
+    cdna_match = transcript_json.get('cdna_match')
+    if cdna_match:
+        if not transcript.tx_position.is_forward_strand:
+            cdna_match = reversed(cdna_match)
+    else:
+        exons = transcript_json['exons']
+        if not transcript.tx_position.is_forward_strand:
+            exons = reversed(exons)
+        cdna_match = json_perfect_exons_to_cdna_match(exons)  # Only use single=True once ALL has been implemented
 
-    for exon_number, (exon_start, exon_end) in enumerate(exons, 1):
-        transcript.exons.append(
-            Exon(transcript=transcript,
-                 tx_position=Position(
-                     transcript_json['chrom'],
-                     exon_start,
-                     exon_end,
-                     transcript_json['strand'] == '+'),
-                 exon_number=exon_number))
+    for number, (exon_start, exon_end, cdna_start, cdna_end, gap) in enumerate(cdna_match, 1):
+        transcript.cdna_match.append(CDNA_Match(transcript=transcript,
+                                                tx_position=Position(
+                                                    transcript_json['chrom'],
+                                                    exon_start,
+                                                    exon_end,
+                                                    transcript_json['strand'] == '+'),
+                                                cdna_start=cdna_start,
+                                                cdna_end=cdna_end,
+                                                gap=gap,
+                                                number=number))
 
     return transcript
+
+
+def json_perfect_exons_to_cdna_match(ordered_exons, single=False):
+    """ Perfectly matched exons are basically a no-gap case of cDNA match """
+    cdna_match = []
+    if single:
+        ordered_exons = list(ordered_exons)
+        start = ordered_exons[0][0]
+        end = ordered_exons[-1][1]
+        last_exon_end = None
+        gap_list = []
+        cdna_length = 0
+        for (exon_start, exon_end) in ordered_exons:
+            # end up looking like "M D M D (M=exon, D=intron length)"
+            if last_exon_end:
+                intron_length = abs(exon_start - last_exon_end)
+                gap_list.append("D%d" % intron_length)
+            exon_length = exon_end - exon_start
+            cdna_length += exon_length
+            gap_list.append("M%d" % exon_length)
+            last_exon_end = exon_end
+        cdna_match = [[start, end, 1, cdna_length, " ".join(gap_list)]]
+    else:
+        cdna_end = 0
+        for (exon_start, exon_end) in ordered_exons:
+            cdna_start = cdna_end + 1
+            exon_length = exon_end - exon_start
+            cdna_end = cdna_start + exon_length - 1
+            cdna_match.append([exon_start, exon_end, cdna_start, cdna_end, None])
+    return cdna_match
 
 
 def read_transcripts(refgene_file):
