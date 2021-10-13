@@ -108,18 +108,25 @@ class Transcript(object):
         else:
             stop_pos = cds_position.chrom_start
         cdna_pos = 0
-        for exon in self.ordered_exons:
-            exon_start = exon.tx_position.chrom_start
-            exon_stop = exon.tx_position.chrom_stop
+        for cdna_match in self.ordered_cdna_match:
+            start = cdna_match.tx_position.chrom_start
+            stop = cdna_match.tx_position.chrom_stop
 
-            if exon_start <= stop_pos <= exon_stop:
+            if start <= stop_pos <= stop:
+                # We're inside this match
                 if cds_position.is_forward_strand:
-                    return cdna_pos + stop_pos - exon_start
+                    position = stop_pos - start
                 else:
-                    return cdna_pos + exon_stop - stop_pos
+                    position = stop - stop_pos
+                # TODO: I don't think this is right as we need to go in reverse through match on '-' strand??
+                cdna_pos += position + cdna_match.get_offset(position)
+                break
             else:
-                cdna_pos += exon_stop - exon_start
-        raise ValueError('Stop codon is not in any of the exons')
+                cdna_pos += stop - start
+        else:
+            raise ValueError('Stop codon is not in any of the exons')
+
+        return cdna_pos
 
     def cdna_to_genomic_coord(self, coord):
         """Convert a HGVS cDNA coordinate to a genomic coordinate."""
@@ -130,48 +137,48 @@ class Transcript(object):
         # compute starting position along spliced transcript.
         if coord.landmark == CDNA_START_CODON:
             if coord.coord > 0:
-                pos = utr5p + coord.coord
+                cdna_pos = utr5p + coord.coord
             else:
-                pos = utr5p + coord.coord + 1
+                cdna_pos = utr5p + coord.coord + 1
         elif coord.landmark == CDNA_STOP_CODON:
             if coord.coord < 0:
                 raise ValueError('CDNACoord cannot have a negative coord and '
                                  'landmark CDNA_STOP_CODON')
-            pos = self.find_stop_codon(self.cds_position) + coord.coord
+            cdna_pos = self.find_stop_codon(self.cds_position) + coord.coord
         else:
             raise ValueError('unknown CDNACoord landmark "%s"' % coord.landmark)
 
-        # 5' flanking sequence.
-        if pos < 1:
+        # 5' flanking sequence (no need to account for gaps)
+        if cdna_pos < 1:
             if transcript_strand:
-                return self.tx_position.chrom_start + pos
+                return self.tx_position.chrom_start + cdna_pos
             else:
-                return self.tx_position.chrom_stop - pos + 1
+                return self.tx_position.chrom_stop - cdna_pos + 1
 
-        # Walk along transcript until we find an exon that contains pos.
+        # Walk along transcript until we find an exon that contains cdna_pos.
         cdna_start = 1
-        cdna_end = 1
-        for exon in self.ordered_exons:
-            exon_start = exon.tx_position.chrom_start + 1
-            exon_end = exon.tx_position.chrom_stop
-            cdna_end = cdna_start + (exon_end - exon_start)
-            if cdna_start <= pos <= cdna_end:
-                break
+        for cdna_match in self.ordered_cdna_match:
+            cdna_end = cdna_start + cdna_match.length - 1
+            if cdna_start <= cdna_pos <= cdna_end:
+                match_pos = cdna_pos - cdna_start
+                # TODO: I don't think this is right as we need to go in reverse through match on '-' strand??
+                match_pos -= cdna_match.get_offset(match_pos)
+                # Compute genomic coordinate using offset.
+                if transcript_strand:
+                    # Plus strand.
+                    start = cdna_match.tx_position.chrom_start + 1
+                    return start + match_pos + coord.offset
+                else:
+                    # Minus strand.
+                    end = cdna_match.tx_position.chrom_stop
+                    return end - match_pos - coord.offset
             cdna_start = cdna_end + 1
         else:
-            # 3' flanking sequence
+            # 3' flanking sequence (no need to account for gaps)
             if transcript_strand:
                 return self.cds_position.chrom_stop + coord.coord
             else:
                 return self.cds_position.chrom_start + 1 - coord.coord
-
-        # Compute genomic coordinate using offset.
-        if transcript_strand:
-            # Plus strand.
-            return exon_start + (pos - cdna_start) + coord.offset
-        else:
-            # Minus strand.
-            return exon_end - (pos - cdna_start) - coord.offset
 
     def genomic_to_cdna_coord(self, genomic_coord):
         """Convert a genomic coordinate to a cDNA coordinate and offset.
@@ -361,28 +368,26 @@ class CDNA_Match(object):
         if not self.gap:
             return 0
 
-        match_i = 0
+        position_1_based = position + 1
+        cdna_match_index = 1
         offset = 0
         for gap_op in self.gap.split():
             code = gap_op[0]
             length = int(gap_op[1:])
             if code == "M":
-                match_i += length
+                cdna_match_index += length
             elif code == "I":
-                if position <= match_i + length:
-                    raise ValueError("Coordinate inside insertion (%s) - no mapping possible!" % gap_op)
+                if position_1_based < cdna_match_index + length:
+                    raise ValueError("Coordinate (%d) inside insertion (%s) - no mapping possible!" % (position_1_based, gap_op))
                 offset += length
             elif code == "D":
-                if position <= match_i + length:
-                    raise ValueError("Coordinate inside deletion (%s) - no mapping possible!" % gap_op)
+                if position < cdna_match_index + length:
+                    raise ValueError("Coordinate (%d) inside deletion (%s) - no mapping possible!" % (position_1_based, gap_op))
                 offset -= length
             else:
                 raise ValueError(f"Unknown code in cDNA GAP: {gap_op}")
 
-            #if self.transcript.name == "NM_000016":
-            #    print(f"{position}: {code} {length} - {offset=}, {match_i=}")
-
-            if match_i >= position:
+            if cdna_match_index > position_1_based:
                 break
 
         return offset

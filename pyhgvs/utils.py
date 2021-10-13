@@ -131,12 +131,12 @@ def json_perfect_exons_to_cdna_match(ordered_exons, single=False):
             last_exon_end = exon_end
         cdna_match = [[start, end, 1, cdna_length, " ".join(gap_list)]]
     else:
-        cdna_end = 0
+        cdna_start = 1
         for (exon_start, exon_end) in ordered_exons:
-            cdna_start = cdna_end + 1
             exon_length = exon_end - exon_start
             cdna_end = cdna_start + exon_length - 1
             cdna_match.append([exon_start, exon_end, cdna_start, cdna_end, None])
+            cdna_start = cdna_end + 1
     return cdna_match
 
 

@@ -17,25 +17,40 @@ def test_cdna_to_genomic_coord():
     HGVS_GRCh37_COORDS = [
         # Has Gap=M185 I3 M250 5' UTR length is 111 so last match is c.74 then 3 bases insert
         ("NM_015120.4:c.74A>T", 73613070),
-#        ("NM_015120.4:c.75G>T", None),  # No consistent alignment
-#        ("NM_015120.4:c.78A>T", 73613071),
-#        ("NM_015120.4:c.79G>C", 73613072),
+        ("NM_015120.4:c.75G>T", None),  # No consistent alignment
+        ("NM_015120.4:c.76G>T", None),  # No consistent alignment
+        ("NM_015120.4:c.77A>T", None),  # No consistent alignment
+        ("NM_015120.4:c.78A>T", 73613071),
+        ("NM_015120.4:c.79G>C", 73613072),
     ]
     transcript = get_transcript("NM_015120.4")
-    print(f"NM_015120.4 UTR = {transcript.get_utr5p_size()}")
     for hgvs_str, expected_genomic_coord in HGVS_GRCh37_COORDS:
         hgvs_name = HGVSName(hgvs_str)
         if expected_genomic_coord:
             genomic_coord = transcript.cdna_to_genomic_coord(hgvs_name.cdna_start)
             nose.tools.assert_equal(genomic_coord, expected_genomic_coord)
         else:
-            pass
-            # nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
+            nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
 
 
 def test_cdna_to_genomic_coord_negative_strand():
-    # TODO:
-    pass
+    HGVS_GRCh37_COORDS = [
+        # Has Gap=M460 I1 M337 5' UTR length is 158 so last match is c.618 then 3 bases insert
+        ("NM_001135649.3:c.300C>T", 88751754),
+        ("NM_001135649.3:c.301A>C", 88751753),
+        ("NM_001135649.3:c.302C>T", 88751752),
+        ("NM_001135649.3:c.303C>T", None),  # N/A GRCh37 - 1 bp insert
+        ("NM_001135649.3:c.304T>C", 88751751),
+        ("NM_001135649.3:c.305T>C", 88751750),
+    ]
+    transcript = get_transcript("NM_001135649.3")
+    for hgvs_str, expected_genomic_coord in HGVS_GRCh37_COORDS:
+        hgvs_name = HGVSName(hgvs_str)
+        if expected_genomic_coord:
+            genomic_coord = transcript.cdna_to_genomic_coord(hgvs_name.cdna_start)
+            nose.tools.assert_equal(genomic_coord, expected_genomic_coord)
+        else:
+            nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
 
 
 _transcripts = {
@@ -66,6 +81,18 @@ _transcripts = {
                        [73826527, 73826648, 11662, 11782, None], [73827804, 73828008, 11783, 11986, None],
                        [73828321, 73828563, 11987, 12228, None], [73829311, 73829495, 12229, 12412, None],
                        [73830367, 73830431, 12413, 12476, None], [73835601, 73835701, 12477, 12576, None],
-                       [73836694, 73837046, 12577, 12928, None]]}
-
+                       [73836694, 73837046, 12577, 12928, None]]
+    },
+    "NM_001135649.3": {
+        "id": "NM_001135649.3",
+        "gene_name": "FOXI3",
+        "end": 88752211,
+        "chrom": "NC_000002.11",
+        "exons": [[88746305, 88748348], [88751414, 88751751], [88751753, 88752211]],
+        "start": 88746305,
+        "strand": "-",
+        "cds_end": 88752053,
+        "cds_start": 88747725,
+        "cdna_match": [[88746305, 88748348, 799, 2841, None], [88751414, 88752211, 1, 798, "M460 I1 M337"]]
+    }
 }
