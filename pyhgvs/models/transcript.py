@@ -19,21 +19,20 @@ class Gene(object):
 class Transcript(object):
     """
     A gene may have multiple transcripts with different combinations of exons.
+
+    We need both exons and cdna_match as need to know exact exon boundaries to work out flanking
     """
 
     def __init__(self, name, version, gene, tx_position, cds_position,
-                 is_default=False, cdna_match=None):
+                 is_default=False, exons=None, cdna_match=None):
         self.name = name
         self.version = version
         self.gene = Gene(gene)
         self.tx_position = tx_position
         self.cds_position = cds_position
         self.is_default = is_default
+        self.exons = exons or []
         self.cdna_match = cdna_match or []
-
-    @lazy
-    def exons(self):
-        return self.cdna_match
 
     @property
     def full_name(self):
@@ -244,7 +243,7 @@ class Transcript(object):
         # Adjust coordinates for coding transcript.
         if self.is_coding:
             # Detect if position before start codon.
-            utr5p = self.get_utr5p_size() if self.is_coding else 0
+            utr5p = self.get_utr5p_size()
             cdna_coord.coord -= utr5p
             if cdna_coord.coord <= 0:
                 cdna_coord.coord -= 1
@@ -296,19 +295,12 @@ class BED6Interval(BED6Interval_base):
             return -end_distance
 
 
-class CDNA_Match(object):
-    """ An exon is a special case of a cDNA match which has 0 gaps """
-    def __init__(self, transcript, tx_position, cdna_start, cdna_end, gap, number):
+class Exon(object):
+    """ We still need exons to work out the flanking boundaries """
+    def __init__(self, transcript, tx_position, number):
         self.transcript = transcript
         self.tx_position = tx_position
-        self.cdna_start = cdna_start
-        self.cdna_end = cdna_end
-        self.gap = gap
         self.number = number
-
-    @property
-    def length(self):
-        return self.cdna_end - self.cdna_start + 1
 
     @property
     def name(self):
@@ -353,6 +345,18 @@ class CDNA_Match(object):
     def strand(self):
         strand = '+' if self.tx_position.is_forward_strand else '-'
         return strand
+
+
+class CDNA_Match(Exon):
+    def __init__(self, transcript, tx_position, cdna_start, cdna_end, gap, number):
+        super(CDNA_Match, self).__init__(transcript, tx_position, number)
+        self.cdna_start = cdna_start
+        self.cdna_end = cdna_end
+        self.gap = gap
+
+    @property
+    def length(self):
+        return self.cdna_end - self.cdna_start + 1
 
     def get_offset(self, position: int):
         """ cdna_match GAP attribute looks like: 'M185 I3 M250' which is code/length

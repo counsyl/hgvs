@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from .models.variants import Position
-from .models.transcript import Transcript, CDNA_Match
+from .models.transcript import Transcript, CDNA_Match, Exon
 
 
 def read_refgene(infile):
@@ -85,15 +85,23 @@ def make_transcript(transcript_json):
             transcript_json['cds_end'],
             transcript_json['strand'] == '+'))
 
-    cdna_match = transcript_json.get('cdna_match')
-    if cdna_match:
-        if not transcript.tx_position.is_forward_strand:
-            cdna_match = reversed(cdna_match)
-    else:
-        exons = transcript_json['exons']
-        if not transcript.tx_position.is_forward_strand:
-            exons = reversed(exons)
+    exons = transcript_json['exons']
+    cdna_match = transcript_json.get('cdna_match', [])
+    if not transcript.tx_position.is_forward_strand:
+        exons.reverse()
+        cdna_match.reverse()
+
+    if not cdna_match:
         cdna_match = json_perfect_exons_to_cdna_match(exons)  # Only use single=True once ALL has been implemented
+
+    for number, (exon_start, exon_end) in enumerate(exons, 1):
+        transcript.exons.append(Exon(transcript=transcript,
+                                     tx_position=Position(
+                                         transcript_json['chrom'],
+                                         exon_start,
+                                         exon_end,
+                                         transcript_json['strand'] == '+'),
+                                     number=number))
 
     for number, (exon_start, exon_end, cdna_start, cdna_end, gap) in enumerate(cdna_match, 1):
         transcript.cdna_match.append(CDNA_Match(transcript=transcript,
