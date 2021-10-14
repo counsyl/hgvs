@@ -256,6 +256,7 @@ def get_refseq_type(name):
     prefix = name[:3]
     return REFSEQ_PREFIX_LOOKUP.get(prefix, (None, ''))[0]
 
+
 class InvalidHGVSName(ValueError):
     def __init__(self, name='', part='name', reason=''):
         if name:
@@ -344,7 +345,7 @@ class HGVSName(object):
 
         # Transcript and gene given with parens.
         # example: NM_007294.3(BRCA1):c.2207A>C
-        match = re.match("^(?P<transcript>[^(]+)\((?P<gene>[^)]+)\)$", prefix)
+        match = re.match(r"^(?P<transcript>[^(]+)\((?P<gene>[^)]+)\)$", prefix)
         if match:
             self.transcript = match.group('transcript')
             self.gene = match.group('gene')
@@ -352,7 +353,7 @@ class HGVSName(object):
 
         # Transcript and gene given with braces.
         # example: BRCA1{NM_007294.3}:c.2207A>C
-        match = re.match("^(?P<gene>[^{]+)\{(?P<transcript>[^}]+)\}$", prefix)
+        match = re.match(r"^(?P<gene>[^{]+){(?P<transcript>[^}]+)}$", prefix)
         if match:
             self.transcript = match.group('transcript')
             self.gene = match.group('gene')
