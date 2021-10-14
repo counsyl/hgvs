@@ -129,11 +129,12 @@ class Transcript(object):
     def cdna_to_genomic_coord(self, coord):
         """Convert a HGVS cDNA coordinate to a genomic coordinate."""
         transcript_strand = self.tx_position.is_forward_strand
-        utr5p = (self.get_utr5p_size()
-                 if self.is_coding else 0)
 
         # compute starting position along spliced transcript.
         if coord.landmark == CDNA_START_CODON:
+            utr5p = (self.get_utr5p_size()
+                     if self.is_coding else 0)
+
             if coord.coord > 0:
                 cdna_pos = utr5p + coord.coord
             else:
@@ -178,8 +179,7 @@ class Transcript(object):
                 return self.cds_position.chrom_start + 1 - coord.coord
 
     def genomic_to_cdna_coord(self, genomic_coord):
-        """Convert a genomic coordinate to a cDNA coordinate and offset.
-        """
+        """ Convert a genomic coordinate to a cDNA coordinate and offset. """
         exons = [exon.get_as_interval()
                  for exon in self.ordered_exons]
 
@@ -195,7 +195,6 @@ class Transcript(object):
             for exon in exons:
                 distance = exon.distance(genomic_coord)
                 if abs(distance) == min_distance_to_exon:
-                    # print(f"{exon}.distance({genomic_coord}) = {distance}")
 
                     # Outside the exon.
                     if distance > 0:
@@ -211,7 +210,6 @@ class Transcript(object):
                     # If outside transcript, don't use offset.
                     if (genomic_coord < self.tx_position.chrom_start + 1 or
                             genomic_coord > self.tx_position.chrom_stop):
-                        print("OUTSIDE TRANSCRIPT - DON'T USE OFFSET")
                         nearest_exon_coord += distance
                         distance = 0
                     cdna_coord = CDNACoord(nearest_exon_coord, distance)
@@ -235,7 +233,6 @@ class Transcript(object):
                 stop_codon -= utr5p
                 if (cdna_coord.coord > stop_codon or
                         cdna_coord.coord == stop_codon and cdna_coord.offset > 0):
-                    print(f"ADJUSTING - 5' UTR size: {utr5p} Stop codon={stop_codon}")
                     cdna_coord.coord -= stop_codon
                     cdna_coord.landmark = CDNA_STOP_CODON
 
@@ -244,19 +241,16 @@ class Transcript(object):
     def _exon_genomic_to_cdna_coord(self, genomic_coord):
         coding_offset = 0
         for cdna_match in self.ordered_cdna_match:
-            exon_length = cdna_match.tx_position.chrom_stop - cdna_match.tx_position.chrom_start
             cds_start = coding_offset + 1
-            cds_end = coding_offset + exon_length
 
             # Inside the exon.
             if cdna_match.tx_position.chrom_start <= genomic_coord <= cdna_match.tx_position.chrom_stop:
-                #print(f"{genomic_coord} INSIDE EXON: {exon}")
                 if self.strand == "+":
                     position = genomic_coord - (cdna_match.tx_position.chrom_start + 1)
                 else:
                     position = cdna_match.tx_position.chrom_stop - genomic_coord
-                return cds_start + position  #  - cdna_match.get_offset(position)
-            coding_offset += exon_length
+                return cds_start + position - cdna_match.get_offset(position)
+            coding_offset += cdna_match.length
         else:
             raise ValueError(f"Couldn't find {genomic_coord=}!")
 
