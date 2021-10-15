@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 import re
 
-from .models.cdna import CDNACoord
+from .models.cdna import CDNACoord, CDNA_START_CODON, CDNA_STOP_CODON
 from .models.genome import GenomeSubset
 from .models.hgvs_name import HGVSName, InvalidHGVSName
 from .models.variants import justify_indel, normalize_variant, revcomp
