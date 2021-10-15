@@ -15,7 +15,7 @@ import re
 
 from .models.cdna import CDNACoord
 from .models.genome import GenomeSubset
-from .models.hgvs_name import HGVSName
+from .models.hgvs_name import HGVSName, InvalidHGVSName
 from .models.variants import justify_indel, normalize_variant, revcomp
 
 
