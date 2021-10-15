@@ -77,8 +77,6 @@ def test_cdna_to_genomic_coord_negative_strand2():
             nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
 
 
-
-@nose.SkipTest  # Currently fails
 def test_genomic_to_cdna_coord_negative_strand():
     transcript = get_transcript("NM_001135649.3")
     for hgvs_str, genomic_coord in _HGVS_NM_001135649_GRCh37_COORDS:
@@ -96,7 +94,6 @@ def test_genomic_to_cdna_coord_negative_strand2():
         if genomic_coord:
             cdna_coord = transcript.genomic_to_cdna_coord(genomic_coord)
             nose.tools.assert_equal(cdna_coord, hgvs_name.cdna_start)
-
 
 
 def get_transcript(accession):
@@ -136,7 +133,8 @@ _transcripts = {
     },
     "NM_001135649.3": {
         # This is a strange case - there are 3 exons, but 2 cDNA match entries
-        # I am not sure if this is an error, ie where are the splice sites?
+        # I think the exons are in error, as eg where is the splice site?
+        # So - we'll just use the cDNA as exons
         "id": "NM_001135649.3",
         "gene_name": "FOXI3",
         "end": 88752211,

@@ -61,19 +61,6 @@ class Transcript(object):
             cdna_match.reverse()
         return cdna_match
 
-    @lazy
-    def ordered_exons(self):
-        """Yield exons in coding order."""
-        transcript_strand = self.tx_position.is_forward_strand
-        if hasattr(self.exons, 'select_related'):
-            exons = list(self.exons.select_related('tx_position'))
-        else:
-            exons = list(self.exons)
-        exons.sort(key=lambda exon: exon.tx_position.chrom_start)
-        if not transcript_strand:
-            exons.reverse()
-        return exons
-
     def get_utr5p_size(self):
         """Return the size of the 5prime UTR of a transcript."""
 
@@ -181,7 +168,7 @@ class Transcript(object):
     def genomic_to_cdna_coord(self, genomic_coord):
         """ Convert a genomic coordinate to a cDNA coordinate and offset. """
         exons = [exon.get_as_interval()
-                 for exon in self.ordered_exons]
+                 for exon in self.ordered_cdna_match]
 
         if len(exons) == 0:
             return None

@@ -91,17 +91,10 @@ def make_transcript(transcript_json):
         exons.reverse()
         cdna_match.reverse()
 
+    # We don't use exons, but run everything through cDNA match so there's just 1 path
+    # exons are treated as a perfect cDNA match
     if not cdna_match:
         cdna_match = json_perfect_exons_to_cdna_match(exons)
-
-    for number, (exon_start, exon_end) in enumerate(exons, 1):
-        transcript.exons.append(Exon(transcript=transcript,
-                                     tx_position=Position(
-                                         transcript_json['chrom'],
-                                         exon_start,
-                                         exon_end,
-                                         transcript_json['strand'] == '+'),
-                                     number=number))
 
     for number, (exon_start, exon_end, cdna_start, cdna_end, gap) in enumerate(cdna_match, 1):
         transcript.cdna_match.append(CDNA_Match(transcript=transcript,
