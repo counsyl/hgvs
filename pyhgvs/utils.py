@@ -92,7 +92,7 @@ def make_transcript(transcript_json):
         cdna_match.reverse()
 
     if not cdna_match:
-        cdna_match = json_perfect_exons_to_cdna_match(exons)  # Only use single=True once ALL has been implemented
+        cdna_match = json_perfect_exons_to_cdna_match(exons)
 
     for number, (exon_start, exon_end) in enumerate(exons, 1):
         transcript.exons.append(Exon(transcript=transcript,
@@ -119,7 +119,9 @@ def make_transcript(transcript_json):
 
 
 def json_perfect_exons_to_cdna_match(ordered_exons, single=False):
-    """ Perfectly matched exons are basically a no-gap case of cDNA match """
+    """ Perfectly matched exons are basically a no-gap case of cDNA match
+        single - use a single cDNA match (deletions for introns) - this is currently broken do not use
+    """
     cdna_match = []
     if single:
         ordered_exons = list(ordered_exons)

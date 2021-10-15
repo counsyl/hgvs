@@ -96,7 +96,7 @@ class Transcript(object):
                 break
             cdna_len += cdna_match.length
         else:
-            raise ValueError("transcript contains no cdna_match")
+            raise ValueError(f"Couldn't find start_codon in cdna_match: {self.ordered_cdna_match}")
 
         return cdna_len
 
