@@ -215,7 +215,7 @@ class Transcript(object):
                     cdna_coord = CDNACoord(nearest_exon_coord, distance)
                     break
             else:
-                raise ValueError("Could not find closest exon!") # Should never happen
+                raise ValueError("Could not find closest exon!")  # Should never happen
         else:
             coord = self._exon_genomic_to_cdna_coord(genomic_coord)
             cdna_coord = CDNACoord(coord, 0)
@@ -249,7 +249,8 @@ class Transcript(object):
                     position = genomic_coord - (cdna_match.tx_position.chrom_start + 1)
                 else:
                     position = cdna_match.tx_position.chrom_stop - genomic_coord
-                return cds_start + position - cdna_match.get_offset(position)
+                offset = cdna_match.get_offset(position, validate=False)
+                return cds_start + position + offset
             coding_offset += cdna_match.length
         else:
             raise ValueError(f"Couldn't find {genomic_coord=}!")
@@ -354,7 +355,7 @@ class CDNA_Match(Exon):
     def length(self):
         return self.cdna_end - self.cdna_start + 1
 
-    def get_offset(self, position: int):
+    def get_offset(self, position: int, validate=True):
         """ cdna_match GAP attribute looks like: 'M185 I3 M250' which is code/length
             @see https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md#the-gap-attribute
             codes operation
@@ -377,11 +378,11 @@ class CDNA_Match(Exon):
             if code == "M":
                 cdna_match_index += length
             elif code == "I":
-                if position_1_based < cdna_match_index + length:
+                if validate and position_1_based < cdna_match_index + length:
                     raise ValueError("Coordinate (%d) inside insertion (%s) - no mapping possible!" % (position_1_based, gap_op))
                 offset += length
             elif code == "D":
-                if position < cdna_match_index + length:
+                if validate and position < cdna_match_index + length:
                     raise ValueError("Coordinate (%d) inside deletion (%s) - no mapping possible!" % (position_1_based, gap_op))
                 offset -= length
             else:

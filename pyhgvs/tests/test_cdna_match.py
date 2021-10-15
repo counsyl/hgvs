@@ -18,13 +18,20 @@ _HGVS_NM_015120_GRCh37_COORDS = [
 ]
 
 _HGVS_NM_001135649_GRCh37_COORDS = [
-    # Has Gap=M460 I1 M337 5' UTR length is 158 so last match is c.618 then 3 bases insert
+    # Has Gap=M460 I1 M337 5' UTR length is 158 so last match is c.302 then 1 base insert
     ("NM_001135649.3:c.300C>T", 88751754),
     ("NM_001135649.3:c.301A>C", 88751753),
     ("NM_001135649.3:c.302C>T", 88751752),
     ("NM_001135649.3:c.303C>T", None),  # N/A GRCh37 - 1 bp insert
     ("NM_001135649.3:c.304T>C", 88751751),
     ("NM_001135649.3:c.305T>C", 88751750),
+]
+
+_HGVS_NM_001012755_GRCh37_COORDS = [
+    # 133, 6207, "M1574 I1 M4500 - 5'UTR length is 163 so last match is transcript pos (1574+132) ie c.1543 then 1bp ins
+    ("NM_001012755.5:c.*619G>C", 103348398),  # NM_001012755.5:c.1543G>C
+    ("NM_001012755.5:c.*620G>C", None),       # NM_001012755.5:c.1544G>C - No GRCh37
+    ("NM_001012755.5:c.*621C>G", 103348397),  # NM_001012755.5:c.1545G>C
 ]
 
 
@@ -39,7 +46,6 @@ def test_cdna_to_genomic_coord():
             nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
 
 
-@nose.SkipTest
 def test_genomic_to_cdna_coord():
     transcript = get_transcript("NM_015120.4")
     for hgvs_str, genomic_coord in _HGVS_NM_015120_GRCh37_COORDS:
@@ -60,7 +66,19 @@ def test_cdna_to_genomic_coord_negative_strand():
             nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
 
 
-@nose.SkipTest
+def test_cdna_to_genomic_coord_negative_strand2():
+    transcript = get_transcript("NM_001012755.5")
+    for hgvs_str, expected_genomic_coord in _HGVS_NM_001012755_GRCh37_COORDS:
+        hgvs_name = HGVSName(hgvs_str)
+        if expected_genomic_coord:
+            genomic_coord = transcript.cdna_to_genomic_coord(hgvs_name.cdna_start)
+            nose.tools.assert_equal(genomic_coord, expected_genomic_coord)
+        else:
+            nose.tools.assert_raises(ValueError, transcript.cdna_to_genomic_coord, hgvs_name.cdna_start)
+
+
+
+@nose.SkipTest  # Currently fails
 def test_genomic_to_cdna_coord_negative_strand():
     transcript = get_transcript("NM_001135649.3")
     for hgvs_str, genomic_coord in _HGVS_NM_001135649_GRCh37_COORDS:
@@ -68,6 +86,17 @@ def test_genomic_to_cdna_coord_negative_strand():
         if genomic_coord:
             cdna_coord = transcript.genomic_to_cdna_coord(genomic_coord)
             nose.tools.assert_equal(cdna_coord, hgvs_name.cdna_start)
+
+
+def test_genomic_to_cdna_coord_negative_strand2():
+    transcript = get_transcript("NM_001012755.5")
+
+    for hgvs_str, genomic_coord in _HGVS_NM_001012755_GRCh37_COORDS:
+        hgvs_name = HGVSName(hgvs_str)
+        if genomic_coord:
+            cdna_coord = transcript.genomic_to_cdna_coord(genomic_coord)
+            nose.tools.assert_equal(cdna_coord, hgvs_name.cdna_start)
+
 
 
 def get_transcript(accession):
@@ -106,6 +135,8 @@ _transcripts = {
                        [73836694, 73837046, 12577, 12928, None]]
     },
     "NM_001135649.3": {
+        # This is a strange case - there are 3 exons, but 2 cDNA match entries
+        # I am not sure if this is an error, ie where are the splice sites?
         "id": "NM_001135649.3",
         "gene_name": "FOXI3",
         "end": 88752211,
@@ -116,5 +147,17 @@ _transcripts = {
         "cds_end": 88752053,
         "cds_start": 88747725,
         "cdna_match": [[88746305, 88748348, 799, 2841, None], [88751414, 88752211, 1, 798, "M460 I1 M337"]]
+    },
+    "NM_001012755.5": {
+        "id": "NM_001012755.5",
+        "gene_name": "SLC25A53",
+        "end": 103401690,
+        "chrom": "NC_000023.10",
+        "exons": [[103343897, 103349971], [103401558, 103401690]],
+        "start": 103343897,
+        "strand": "-",
+        "cds_end": 103349940,
+        "cds_start": 103349016,
+        "cdna_match": [[103343897, 103349971, 133, 6207, "M1574 I1 M4500"], [103401558, 103401690, 1, 132, None]]
     }
 }
