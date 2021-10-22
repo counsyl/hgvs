@@ -83,7 +83,13 @@ class Transcript(object):
                 break
             cdna_len += cdna_match.length
         else:
-            raise ValueError(f"Couldn't find start_codon in cdna_match: {self.ordered_cdna_match}")
+            cdna_matches = []
+            for cdna_match in self.ordered_cdna_match:
+                start = cdna_match.tx_position.chrom_start
+                end = cdna_match.tx_position.chrom_stop
+                cdna_matches.append(f"{start}-{end}")
+            cdna_match_summary = ", ".join(cdna_matches)
+            raise ValueError("Couldn't find start_codon (%d) in cdna_match: {%s" % (start_codon, cdna_match_summary))
 
         return cdna_len
 
