@@ -72,6 +72,9 @@ def convert_transcript_pyreference_to_pyhgvs(transcript_data: Dict) -> Dict:
         pyhgvs_data["cdna_match"] = cdna_match
     if transcript_data.get("partial"):
         pyhgvs_data["partial"] = 1
+    other_chroms = transcript_data.get("other_chroms")
+    if other_chroms:
+        pyhgvs_data["other_chroms"] = other_chroms
 
     # Few extra fields (pyHGVS doesn't currently use)
     pyhgvs_data["biotype"] = ",".join(transcript_data["biotype"])
