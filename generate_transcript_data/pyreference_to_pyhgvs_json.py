@@ -41,8 +41,8 @@ def convert_transcript_pyreference_to_pyhgvs(transcript_data: Dict) -> Dict:
     start = transcript_data["start"]
     end = transcript_data["stop"]
     strand = transcript_data["strand"]
-    # PyHGVS has cds_start/cds_end be equal to start/end for non-coding transcripts
-    cds_start = transcript_data.get("cds_start", start)
+    # PyHGVS has cds_start/cds_end be equal to end/end for non-coding transcripts (so coding length ie end-start = 0)
+    cds_start = transcript_data.get("cds_start", end)
     cds_end = transcript_data.get("cds_end", end)
     # PyHGVS exons are in genomic order, PyReference are in stranded
     features = transcript_data["features_by_type"]
