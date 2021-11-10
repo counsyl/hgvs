@@ -80,7 +80,7 @@ class Transcript(object):
                 else:
                     position = end - start_codon - 1
                 return cdna_offset + position + cdna_match.get_offset(position)
-            cdna_offset = cdna_match.cdna_end
+            cdna_offset += cdna_match.length
 
         # Couldn't find it
         cdna_matches = []
@@ -110,7 +110,7 @@ class Transcript(object):
                     position = stop - stop_pos
                 return cdna_offset + position + cdna_match.get_offset(position)
             else:
-                cdna_offset = cdna_match.cdna_end
+                cdna_offset += cdna_match.length
         raise ValueError('Stop codon is not in any of the exons')
 
     def cdna_to_genomic_coord(self, coord):
@@ -233,7 +233,7 @@ class Transcript(object):
                     position = cdna_match.tx_position.chrom_stop - genomic_coord
                 offset = cdna_match.get_offset(position, validate=False)
                 return cdna_offset + position + offset + 1
-            cdna_offset = cdna_match.cdna_end
+            cdna_offset += cdna_match.length
 
         raise ValueError(f"Couldn't find {genomic_coord=}!")
 
