@@ -113,7 +113,7 @@ class Transcript(object):
                 cdna_pos += position + cdna_match.get_offset(position)
                 break
             else:
-                cdna_pos += stop - start
+                cdna_pos = cdna_match.cdna_end
         else:
             raise ValueError('Stop codon is not in any of the exons')
 
