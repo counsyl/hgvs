@@ -5,6 +5,7 @@ Helper functions.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import operator
 from .models.variants import Position
 from .models.transcript import Transcript, CDNA_Match, Exon
 
@@ -86,7 +87,10 @@ def make_transcript(transcript_json):
             transcript_json['strand'] == '+'))
 
     exons = transcript_json['exons']
+    exons.sort(key=operator.itemgetter(0))
     cdna_match = transcript_json.get('cdna_match', [])
+    cdna_match.sort(key=operator.itemgetter(0))
+
     if not transcript.tx_position.is_forward_strand:
         exons.reverse()
         cdna_match.reverse()
