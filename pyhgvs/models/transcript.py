@@ -69,7 +69,7 @@ class Transcript(object):
         # Find the exon containing the start codon.
         start_codon = (self.cds_position.chrom_start if transcript_strand
                        else self.cds_position.chrom_stop - 1)
-        cdna_len = 0
+        cdna_offset = 0
         for cdna_match in self.ordered_cdna_match:
             start = cdna_match.tx_position.chrom_start
             end = cdna_match.tx_position.chrom_stop
@@ -79,19 +79,17 @@ class Transcript(object):
                     position = start_codon - start
                 else:
                     position = end - start_codon - 1
-                cdna_len += position + cdna_match.get_offset(position)
-                break
-            cdna_len += cdna_match.length
-        else:
-            cdna_matches = []
-            for cdna_match in self.ordered_cdna_match:
-                start = cdna_match.tx_position.chrom_start
-                end = cdna_match.tx_position.chrom_stop
-                cdna_matches.append(f"{start}-{end}")
-            cdna_match_summary = ", ".join(cdna_matches)
-            raise ValueError("Couldn't find start_codon (%d) in cdna_match: {%s" % (start_codon, cdna_match_summary))
+                return cdna_offset + position + cdna_match.get_offset(position)
+            cdna_offset = cdna_match.cdna_end
 
-        return cdna_len
+        # Couldn't find it
+        cdna_matches = []
+        for cdna_match in self.ordered_cdna_match:
+            start = cdna_match.tx_position.chrom_start
+            end = cdna_match.tx_position.chrom_stop
+            cdna_matches.append(f"{start}-{end}")
+        cdna_match_summary = ", ".join(cdna_matches)
+        raise ValueError("Couldn't find start_codon (%d) in cdna_match: {%s" % (start_codon, cdna_match_summary))
 
     def find_stop_codon(self, cds_position):
         """Return the position along the cDNA of the base after the stop codon."""
@@ -99,7 +97,7 @@ class Transcript(object):
             stop_pos = cds_position.chrom_stop
         else:
             stop_pos = cds_position.chrom_start
-        cdna_pos = 0
+        cdna_offset = 0
         for cdna_match in self.ordered_cdna_match:
             start = cdna_match.tx_position.chrom_start
             stop = cdna_match.tx_position.chrom_stop
@@ -110,14 +108,10 @@ class Transcript(object):
                     position = stop_pos - start
                 else:
                     position = stop - stop_pos
-                cdna_pos += position + cdna_match.get_offset(position)
-                break
+                return cdna_offset + position + cdna_match.get_offset(position)
             else:
-                cdna_pos = cdna_match.cdna_end
-        else:
-            raise ValueError('Stop codon is not in any of the exons')
-
-        return cdna_pos
+                cdna_offset = cdna_match.cdna_end
+        raise ValueError('Stop codon is not in any of the exons')
 
     def cdna_to_genomic_coord(self, coord):
         """Convert a HGVS cDNA coordinate to a genomic coordinate."""
@@ -148,11 +142,9 @@ class Transcript(object):
                 return self.tx_position.chrom_stop - cdna_pos + 1
 
         # Walk along transcript until we find an exon that contains cdna_pos.
-        cdna_start = 1
         for cdna_match in self.ordered_cdna_match:
-            cdna_end = cdna_start + cdna_match.length - 1
-            if cdna_start <= cdna_pos <= cdna_end:
-                match_pos = cdna_pos - cdna_start
+            if cdna_match.cdna_start <= cdna_pos <= cdna_match.cdna_end:
+                match_pos = cdna_pos - cdna_match.cdna_start
                 match_pos -= cdna_match.get_offset(match_pos)
                 # Compute genomic coordinate using offset.
                 if transcript_strand:
@@ -163,7 +155,6 @@ class Transcript(object):
                     # Minus strand.
                     end = cdna_match.tx_position.chrom_stop
                     return end - match_pos - coord.offset
-            cdna_start = cdna_end + 1
         else:
             # 3' flanking sequence (no need to account for gaps)
             if transcript_strand:
@@ -232,10 +223,8 @@ class Transcript(object):
         return cdna_coord
 
     def _exon_genomic_to_cdna_coord(self, genomic_coord):
-        coding_offset = 0
+        cdna_offset = 0
         for cdna_match in self.ordered_cdna_match:
-            cds_start = coding_offset + 1
-
             # Inside the exon.
             if cdna_match.tx_position.chrom_start <= genomic_coord <= cdna_match.tx_position.chrom_stop:
                 if self.strand == "+":
@@ -243,10 +232,10 @@ class Transcript(object):
                 else:
                     position = cdna_match.tx_position.chrom_stop - genomic_coord
                 offset = cdna_match.get_offset(position, validate=False)
-                return cds_start + position + offset
-            coding_offset += cdna_match.length
-        else:
-            raise ValueError(f"Couldn't find {genomic_coord=}!")
+                return cdna_offset + position + offset + 1
+            cdna_offset = cdna_match.cdna_end
+
+        raise ValueError(f"Couldn't find {genomic_coord=}!")
 
 
 BED6Interval_base = namedtuple(
