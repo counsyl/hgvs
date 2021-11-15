@@ -364,6 +364,11 @@ class HGVSName(object):
             self.transcript = prefix
             return
 
+        # Determine using LRG type.
+        if prefix.startswith('LRG_'):
+            self.transcript = prefix
+            return
+
         # Determine using refseq type.
         refseq_type = get_refseq_type(prefix)
         if refseq_type in ('mRNA', 'RNA'):
