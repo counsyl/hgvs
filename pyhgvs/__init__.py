@@ -52,7 +52,7 @@ def get_vcf_allele(hgvs, genome, transcript=None):
 
     # Sometimes we need to retrieve alt from reference
     # Eg NC_000001.11:g.169549811=
-    if hgvs.mutation_type == "=" and alt == 'N':
+    if hgvs.mutation_type == "=":
         alt = ref
 
     if hgvs.mutation_type in _indel_mutation_types:
