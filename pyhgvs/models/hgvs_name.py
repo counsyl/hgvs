@@ -542,7 +542,7 @@ class HGVSName(object):
                 self.ref_allele = groups.get('ref', '')
                 self.alt_allele = groups.get('alt', '')
 
-                # Convert numerical allelles.
+                # Convert numerical alleles.
                 if self.ref_allele.isdigit():
                     self.ref_allele = "N" * int(self.ref_allele)
                 if self.alt_allele.isdigit():
@@ -738,9 +738,6 @@ class HGVSName(object):
             end = transcript.cdna_to_genomic_coord(self.cdna_end)
 
             if not transcript.tx_position.is_forward_strand:
-                if end > start:
-                    raise AssertionError(
-                        "cdna_start cannot be greater than cdna_end")
                 start, end = end, start
 
             if start > end:
@@ -754,6 +751,13 @@ class HGVSName(object):
             raise NotImplementedError(
                 'Coordinates are not available for this kind of HGVS name "%s"'
                 % self.kind)
+
+        # Check coordinate span is equal to reference bases
+        if self.ref_allele:
+            coordinate_span = end - start + 1  # Ref will always be >=1 base
+            ref_length = len(self.ref_allele)
+            if coordinate_span != ref_length:
+                raise InvalidHGVSName("Coordinate span (%d) not equal to ref length %d" % (coordinate_span, ref_length))
 
         return chrom, start, end
 
