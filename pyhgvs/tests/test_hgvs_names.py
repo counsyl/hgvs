@@ -9,13 +9,9 @@ try:
 except ImportError:
     SequenceFileDB = None
 
-from .. import CDNACoord
-from .. import CDNA_STOP_CODON
-from .. import HGVSName
-from .. import InvalidHGVSName
-from .. import cdna_to_genomic_coord
+from ..models.cdna import CDNACoord, CDNA_STOP_CODON
+from ..models.hgvs_name import HGVSName, InvalidHGVSName
 from .. import format_hgvs_name
-from .. import genomic_to_cdna_coord
 from .. import parse_hgvs_name
 from ..utils import read_transcripts
 from .genome import MockGenomeTestFile
@@ -50,7 +46,7 @@ def test_genomic_to_cdna_coord():
     """
     for transcript_name, genomic_coord, cdna_coord_expected in _convert_coords:
         transcript = get_transcript(transcript_name)
-        cdna_coord = genomic_to_cdna_coord(transcript, genomic_coord[1])
+        cdna_coord = transcript.genomic_to_cdna_coord(genomic_coord[1])
         nose.tools.assert_equal(
             cdna_coord, cdna_coord_expected,
             repr((cdna_coord, cdna_coord_expected,
@@ -63,7 +59,7 @@ def test_cdna_to_genomic_coord():
     """
     for transcript_name, genomic_coord_expected, cdna_coord in _convert_coords:
         transcript = get_transcript(transcript_name)
-        genomic_coord = cdna_to_genomic_coord(transcript, cdna_coord)
+        genomic_coord = transcript.cdna_to_genomic_coord(cdna_coord)
         nose.tools.assert_equal(
             genomic_coord, genomic_coord_expected[1],
             repr((genomic_coord, genomic_coord_expected[1],
@@ -123,13 +119,22 @@ def test_variant_to_name():
     for (expected_hgvs_name, variant,
          name_canonical, var_canonical) in _name_variants:
         if name_canonical:
-            transcript_name = HGVSName(expected_hgvs_name).transcript
-            transcript = get_transcript(transcript_name)
-            assert transcript, transcript_name
+            hgvs = HGVSName(expected_hgvs_name)
+            transcript_name = hgvs.transcript
+            transcript = None
+            if transcript_name:
+                transcript = get_transcript(transcript_name)
+                assert transcript, transcript_name
             chrom, offset, ref, alt = variant
             hgvs_name = format_hgvs_name(
                 chrom, offset, ref, alt, genome, transcript,
                 use_gene=False)
+
+            if hgvs.kind == 'g':
+                # Strip off g.HGVS prefix
+                i = expected_hgvs_name.find(":g.")
+                expected_hgvs_name = expected_hgvs_name[i+1:]
+
             nose.tools.assert_equal(
                 hgvs_name, expected_hgvs_name,
                 repr([hgvs_name, expected_hgvs_name, variant]))
@@ -206,7 +211,7 @@ _parse_cdna_coords = [
 ]
 
 
-# Test examples of coverting coordinates.
+# Test examples of converting coordinates.
 _convert_coords = [
     # Positions near start codon.
     ('NM_000016.4', ('chr1', 76190473), CDNACoord(1)),
@@ -723,7 +728,11 @@ _name_variants = [
     ('NM_000016.4:c.387+1delG', ('chr1', 76199309, 'TG', 'T'), True, True),
     ('NM_000016.4:c.475delT', ('chr1', 76205669, 'AT', 'A'), True, True),
     ('NM_000016.4:c.1189dupT', ('chr1', 76227049, 'C', 'CT'), True, True),
+    # Same as above but without optional trailing base
+    ('NM_000016.4:c.1189dup', ('chr1', 76227049, 'C', 'CT'), False, True),
     ('NM_000016.4:c.1191delT', ('chr1', 76227051, 'AT', 'A'), True, True),
+    # Same as above but without optional trailing base
+    ('NM_000016.4:c.1191del', ('chr1', 76227051, 'AT', 'A'), False, True),
     ('NM_000016.4:c.306_307insG', ('chr1', 76199232, 'T', 'TG'), True, True),
 
     # Alignment tests for HGVS 3' and VCF left-alignment.
@@ -734,6 +743,9 @@ _name_variants = [
      True, True),
     ('NM_000492.3:c.1155_1156dupTA', ('chr7', 117182104, 'A', 'AAT'),
      True, True),
+    # Same as above but without optional trailing base
+    ('NM_000492.3:c.1155_1156dup', ('chr7', 117182104, 'A', 'AAT'),
+     False, True),
     ('NM_000492.3:c.3889dupT', ('chr7', 117292905, 'A', 'AT'), True, True),
 
     # Transcript prefix.
@@ -750,11 +762,21 @@ _name_variants = [
     ('chr11:g.17496508T>C', ('chr11', 17496508, 'T', 'C'), False, True),
 
     # Genomic indels.
+    ('chr17:g.7126029_7126030insTG',
+     ('chr17', 7126028, 'A', 'AGT'), True, True),
+
     ('chr17:g.7126029_7126037delGCAGAGGTGinsTCAAAGCAC',
      ('chr17', 7126028, 'AGCAGAGGTG', 'ATCAAAGCAC'), False, True),
 
     # Genomic single letter del and insert.
     ('chr1:g.76216235delAinsGC', ('chr1', 76216234, 'AA', 'AGC'),
+     False, True),
+
+    # Genomic dup
+    ('chr7:g.117182108_117182109dup', ('chr7', 117182104, 'A', 'AAT'),
+     False, True),
+
+    ('chr7:g.117182105_117182106dupAT', ('chr7', 117182104, 'A', 'AAT'),
      False, True),
 
     # Genomic delete region.

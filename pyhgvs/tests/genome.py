@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import itertools
 import os
 
-from ..variants import revcomp
+from ..models.variants import revcomp
 
 
 try:
@@ -77,9 +77,11 @@ class MockGenome(object):
             if SequenceFileDB is None:
                 raise ValueError('pygr is not available.')
             self._genome = SequenceFileDB(db_filename)
+            self._source_filename = db_filename
         elif filename:
             # Read genome sequence from lookup table.
             self.read(filename)
+            self._source_filename = filename
 
     def __contains__(self, chrom):
         """Return True if genome contains chromosome."""
@@ -113,8 +115,8 @@ class MockGenome(object):
                         None, end - start))
                 else:
                     raise MockGenomeError(
-                        'Sequence not in test data: %s:%d-%d' %
-                        (chrom, start, end))
+                        'Sequence not in test data: %s:%d-%d source: %s' %
+                        (chrom, start, end, self._source_filename))
 
     def read(self, filename):
         """Read a sequence lookup table from a file.
