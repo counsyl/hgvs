@@ -128,6 +128,7 @@ class HGVSRegex(object):
     # cDNA allele syntax
     CDNA_ALLELE = [
         # No change
+        CDNA_START + EQUAL,
         CDNA_START + DNA_REF + EQUAL,
 
         # Substitution
@@ -189,6 +190,7 @@ class HGVSRegex(object):
     # Genomic allele syntax
     GENOMIC_ALLELE = [
         # No change
+        COORD_START + EQUAL,
         COORD_START + DNA_REF + EQUAL,
 
         # Substitution

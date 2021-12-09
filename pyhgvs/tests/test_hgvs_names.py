@@ -358,6 +358,18 @@ _parse_names = [
          'mutation_type': '=',
      }),
 
+    # cDNA no change, no provided base
+    ('BRCA1:c.101=', True,
+     {
+         'gene': 'BRCA1',
+         'kind': 'c',
+         'cdna_start': CDNACoord(101),
+         'cdna_end': CDNACoord(101),
+         'ref_allele': '',
+         'alt_allele': '',
+         'mutation_type': '=',
+     }),
+
     # cDNA 1bp mutations.
     ('BRCA1:c.101A>C', True,
      {
@@ -539,6 +551,18 @@ _parse_names = [
          'end': 101,
          'ref_allele': 'A',
          'alt_allele': 'A',
+         'mutation_type': '=',
+     }),
+
+    # Genomic no change + no ref base
+    ('BRCA1:g.101=', True,
+     {
+         'gene': 'BRCA1',
+         'kind': 'g',
+         'start': 101,
+         'end': 101,
+         'ref_allele': '',
+         'alt_allele': '',
          'mutation_type': '=',
      }),
 
