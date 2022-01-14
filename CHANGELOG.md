@@ -1,5 +1,9 @@
 # HGVS library change log
 
+## Unreleased
+  - Use same code for calculating transcript position of start/stop codons.
+  - Be able to pass in pre-calculated start/stop from transcript_json if available
+
 ## 0.12.1 (2021-12-09)
   - Fix issue #61 - Regex for reference HGVS without reference base
 
