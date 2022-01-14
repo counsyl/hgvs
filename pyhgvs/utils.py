@@ -84,7 +84,10 @@ def make_transcript(transcript_json):
             transcript_json['chrom'],
             transcript_json['cds_start'],
             transcript_json['cds_end'],
-            transcript_json['strand'] == '+'))
+            transcript_json['strand'] == '+'),
+        start_codon_transcript_pos=transcript_json.get("start_codon_transcript_pos"),
+        stop_codon_transcript_pos=transcript_json.get("stop_codon_transcript_pos"),
+    )
 
     exons = transcript_json['exons']
     exons.sort(key=operator.itemgetter(0))

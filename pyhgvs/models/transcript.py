@@ -24,15 +24,18 @@ class Transcript(object):
     """
 
     def __init__(self, name, version, gene, tx_position, cds_position,
-                 is_default=False, exons=None, cdna_match=None):
+                 is_default=False, cdna_match=None,
+                 start_codon_transcript_pos=None, stop_codon_transcript_pos=None):
         self.name = name
         self.version = version
         self.gene = Gene(gene)
         self.tx_position = tx_position
         self.cds_position = cds_position
         self.is_default = is_default
-        self.exons = exons or []
         self.cdna_match = cdna_match or []
+        # Optional pre-calculated transcript coordinates
+        self._start_codon_transcript_pos = start_codon_transcript_pos
+        self._stop_codon_transcript_pos = stop_codon_transcript_pos
 
     @property
     def full_name(self):
@@ -61,57 +64,51 @@ class Transcript(object):
             cdna_match.reverse()
         return cdna_match
 
-    def get_utr5p_size(self):
-        """Return the size of the 5prime UTR of a transcript."""
+    def get_cds_start_stop(self):
+        (start, stop) = (self.cds_position.chrom_start, self.cds_position.chrom_stop)
+        if not self.tx_position.is_forward_strand:
+            (stop, start) = (start, stop)
+        return start, stop
 
+    @lazy
+    def start_codon(self):
+        """ Transcript position """
+
+        if self._start_codon_transcript_pos is not None:
+            return self._start_codon_transcript_pos
+
+        start_genomic_coordinate, _ = self.get_cds_start_stop()
+        return self._get_transcript_position(start_genomic_coordinate)
+
+    @lazy
+    def stop_codon(self):
+        """ Transcript position """
+        if self._stop_codon_transcript_pos is not None:
+            return self._stop_codon_transcript_pos
+
+        _, stop_genomic_coordinate = self.get_cds_start_stop()
+        return self._get_transcript_position(stop_genomic_coordinate)
+
+    def _get_transcript_position(self, genomic_coordinate, label=None):
         transcript_strand = self.tx_position.is_forward_strand
 
-        # Find the exon containing the start codon.
-        start_codon = (self.cds_position.chrom_start if transcript_strand
-                       else self.cds_position.chrom_stop - 1)
-        cdna_offset = 0
-        for cdna_match in self.ordered_cdna_match:
-            start = cdna_match.tx_position.chrom_start
-            end = cdna_match.tx_position.chrom_stop
-            if start <= start_codon < end:
-                # We're inside this match
-                if transcript_strand:
-                    position = start_codon - start
-                else:
-                    position = end - start_codon - 1
-                return cdna_offset + position + cdna_match.get_offset(position)
-            cdna_offset += cdna_match.length
-
-        # Couldn't find it
-        cdna_matches = []
-        for cdna_match in self.ordered_cdna_match:
-            start = cdna_match.tx_position.chrom_start
-            end = cdna_match.tx_position.chrom_stop
-            cdna_matches.append(f"{start}-{end}")
-        cdna_match_summary = ", ".join(cdna_matches)
-        raise ValueError("Couldn't find start_codon (%d) in cdna_match: {%s" % (start_codon, cdna_match_summary))
-
-    def find_stop_codon(self, cds_position):
-        """Return the position along the cDNA of the base after the stop codon."""
-        if cds_position.is_forward_strand:
-            stop_pos = cds_position.chrom_stop
-        else:
-            stop_pos = cds_position.chrom_start
         cdna_offset = 0
         for cdna_match in self.ordered_cdna_match:
             start = cdna_match.tx_position.chrom_start
             stop = cdna_match.tx_position.chrom_stop
 
-            if start <= stop_pos <= stop:
+            if start <= genomic_coordinate <= stop:
                 # We're inside this match
-                if cds_position.is_forward_strand:
-                    position = stop_pos - start
+                if transcript_strand:
+                    position = genomic_coordinate - start
                 else:
-                    position = stop - stop_pos
+                    position = stop - genomic_coordinate
                 return cdna_offset + position + cdna_match.get_offset(position)
             else:
                 cdna_offset += cdna_match.length
-        raise ValueError('Stop codon is not in any of the exons')
+        if label is None:
+            label = "Genomic coordinate: %d" % genomic_coordinate
+        raise ValueError('%s is not in any of the exons' % label)
 
     def cdna_to_genomic_coord(self, coord):
         """Convert a HGVS cDNA coordinate to a genomic coordinate."""
@@ -119,8 +116,7 @@ class Transcript(object):
 
         # compute starting position along spliced transcript.
         if coord.landmark == CDNA_START_CODON:
-            utr5p = (self.get_utr5p_size()
-                     if self.is_coding else 0)
+            utr5p = (self.start_codon if self.is_coding else 0)
 
             if coord.coord > 0:
                 cdna_pos = utr5p + coord.coord
@@ -130,7 +126,7 @@ class Transcript(object):
             if coord.coord < 0:
                 raise ValueError('CDNACoord cannot have a negative coord and '
                                  'landmark CDNA_STOP_CODON')
-            cdna_pos = self.find_stop_codon(self.cds_position) + coord.coord
+            cdna_pos = self.stop_codon + coord.coord
         else:
             raise ValueError('unknown CDNACoord landmark "%s"' % coord.landmark)
 
@@ -207,13 +203,13 @@ class Transcript(object):
         # Adjust coordinates for coding transcript.
         if self.is_coding:
             # Detect if position before start codon.
-            utr5p = self.get_utr5p_size()
+            utr5p = self.start_codon
             cdna_coord.coord -= utr5p
             if cdna_coord.coord <= 0:
                 cdna_coord.coord -= 1
             else:
                 # Detect if position is after stop_codon.
-                stop_codon = self.find_stop_codon(self.cds_position)
+                stop_codon = self.stop_codon
                 stop_codon -= utr5p
                 if (cdna_coord.coord > stop_codon or
                         cdna_coord.coord == stop_codon and cdna_coord.offset > 0):
