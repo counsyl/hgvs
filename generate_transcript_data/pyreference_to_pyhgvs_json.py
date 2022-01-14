@@ -53,10 +53,6 @@ def convert_transcript_pyreference_to_pyhgvs(transcript_data: Dict) -> Dict:
             raise ValueError("Haven't handled stranded Target alignment")
         cdna_match.append([cdm.get(k) for k in ["start", "stop", "cdna_start", "cdna_end", "gap"]])
 
-    if strand == '-':
-        exons.reverse()
-        cdna_match.reverse()
-
     pyhgvs_data = {
         'chrom': transcript_data["chr"],
         'start': start,
