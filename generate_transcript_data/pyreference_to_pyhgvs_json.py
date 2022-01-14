@@ -64,6 +64,10 @@ def convert_transcript_pyreference_to_pyhgvs(transcript_data: Dict) -> Dict:
     }
 
     # Optional stuff
+    for optional_key in ["start_codon_transcript_pos", "stop_codon_transcript_pos"]
+        if value := transcript_data.get(optional_key):
+            pyhgvs_data[optional_key] = value
+
     if cdna_match:
         pyhgvs_data["cdna_match"] = cdna_match
     if transcript_data.get("partial"):
