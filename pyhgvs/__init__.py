@@ -77,9 +77,9 @@ def get_alt_from_sequence(hgvs, genome, transcript):
 
 def matches_ref_allele(hgvs, genome, transcript=None):
     """Return True if reference allele matches genomic sequence."""
-    ref, _ = hgvs.get_ref_alt(
-        transcript.tx_position.is_forward_strand if transcript else True)
-    chrom, start, end = hgvs.get_ref_coords(transcript)
+    is_forward_strand = transcript.tx_position.is_forward_strand if transcript else True
+    ref, _ = hgvs.get_ref_alt(is_forward_strand, raw_dup_alleles=True)  # get raw values so dup isn't always True
+    chrom, start, end = hgvs.get_raw_coords(transcript)
     genome_ref = get_genomic_sequence(genome, chrom, start, end)
     return genome_ref == ref
 

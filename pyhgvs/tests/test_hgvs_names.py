@@ -11,7 +11,7 @@ except ImportError:
 
 from ..models.cdna import CDNACoord, CDNA_STOP_CODON
 from ..models.hgvs_name import HGVSName, InvalidHGVSName
-from .. import format_hgvs_name
+from .. import format_hgvs_name, matches_ref_allele
 from .. import parse_hgvs_name
 from ..utils import read_transcripts
 from .genome import MockGenomeTestFile
@@ -195,6 +195,31 @@ def test_invalid_coordinates():
     genome = SequenceFileDB('pyhgvs/tests/data/test_refseqs.fa')
     hgvs_name = 'NC_000005.10:g.177421339_177421327delACTCGAGTGCTCC'
     parse_hgvs_name(hgvs_name, genome, get_transcript=get_transcript)
+
+
+def test_matches_ref():
+    genome = MockGenomeTestFile(
+        db_filename='hg19.fa',
+        filename='pyhgvs/tests/data/test_hgvs.genome',
+        create_data=False)
+    # genome = SequenceFileDB('pyhgvs/tests/data/test_hgvs.genome')
+    transcript = get_transcript("NM_000016.4")
+
+    # The base at this position is "T" - used to always work w/dups
+    expected = [
+        ("NM_000016.4:c.1189dupT", True),
+        ("NM_000016.4:c.1189T>TT", True),  # same as dup by both alleles provided
+        ("NM_000016.4:c.1189dupA", False),
+        ("NM_000016.4:c.1189A>AA", False),
+        ("NM_000016.4:c.1189delT", True),
+        ("NM_000016.4:c.1189delC", False),
+        ("NM_000016.4:c.1189delCinsT", False),
+        ("NM_000016.4:c.1189delTinsC", True),
+    ]
+    for hgvs_string, expected_result in expected:
+        hgvs_name = HGVSName(hgvs_string)
+        matches_ref = matches_ref_allele(hgvs_name, genome, transcript)
+        nose.tools.assert_equal(matches_ref, expected_result, hgvs_string + " matches reference base")
 
 
 # Test examples of cDNA coordinates.

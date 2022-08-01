@@ -793,15 +793,17 @@ class HGVSName(object):
                                       self.mutation_type)
         return chrom, start, end
 
-    def get_ref_alt(self, is_forward_strand=True):
-        """Return reference and alternate alleles."""
+    def get_ref_alt(self, is_forward_strand=True, raw_dup_alleles=False):
+        """ Return reference and alternate alleles.
+            Original code was for representation - ie it altered dup to look like an insert
+            pass raw_dup_alleles=True to get the raw values """
         if self.kind == 'p':
             raise NotImplementedError(
                 'get_ref_alt is not implemented for protein HGVS names')
         alleles = [self.ref_allele, self.alt_allele]
 
         # Represent duplications are inserts.
-        if self.mutation_type == "dup":
+        if not raw_dup_alleles and self.mutation_type == "dup":
             alleles[0] = ""
             alleles[1] = alleles[1][:len(alleles[1]) // 2]
 
