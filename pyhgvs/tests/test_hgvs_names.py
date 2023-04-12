@@ -706,6 +706,11 @@ _parse_names = [
          'alt_allele': 'TA',
          'mutation_type': 'delins',
      }),
+    #
+    ('NC_000010.10:g.89623915_89623920=', False,
+     {
+         'chrom': 'NC_000010.10',
+     }),
 ]
 
 

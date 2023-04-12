@@ -204,6 +204,7 @@ class HGVSRegex(object):
         COORD_START + DUP,
 
         # Insertion, deletion, duplication
+        COORD_RANGE + EQUAL,
         COORD_RANGE + INS + DNA_ALT,
         COORD_RANGE + DEL + DNA_REF,
         COORD_RANGE + DUP + DNA_REF,
