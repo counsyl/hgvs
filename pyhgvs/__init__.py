@@ -155,8 +155,9 @@ def hgvs_justify_indel(chrom, offset, ref, alt, strand, genome):
         return chrom, offset, ref, alt
 
     # Get genomic sequence around the lesion.
-    start = max(offset - 100, 0)
-    end = offset + 100
+    size = max(len(ref), len(alt)) + 1
+    start = max(offset - size, 0)
+    end = offset + size
     seq = str(genome[str(chrom)][start - 1:end]).upper()
     cds_offset = offset - start
 
